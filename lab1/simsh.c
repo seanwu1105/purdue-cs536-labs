@@ -8,32 +8,35 @@
 
 int main(void)
 {
-pid_t k;
-char buf[100];
-int status;
-int len;
+	pid_t k;
+	char buf[100];
+	int status;
+	int len;
 
-  while(1) {
+	while (1)
+	{
 
-	// print prompt
-  	fprintf(stdout,"[%d]$ ",getpid());
+		// print prompt
+		fprintf(stdout, "[%d]$ ", getpid());
 
-	// read command from stdin
-	fgets(buf, 100, stdin);
-	len = strlen(buf);
-	if(len == 1) 				// only return key pressed
-	  continue;
-	buf[len-1] = '\0';
+		// read command from stdin
+		fgets(buf, 100, stdin);
+		len = strlen(buf);
+		if (len == 1) // only return key pressed
+			continue;
+		buf[len - 1] = '\0';
 
-  	k = fork();
-  	if (k==0) {
-  	// child code
-    	  if(execlp(buf,buf,NULL) == -1)	// if execution failed, terminate child
-	  	exit(1);
-  	}
-  	else {
-  	// parent code 
-	  waitpid(k, &status, 0);
-  	}
-  }
+		k = fork();
+		if (k == 0)
+		{
+			// child code
+			if (execlp(buf, buf, NULL) == -1) // if execution failed, terminate child
+				exit(1);
+		}
+		else
+		{
+			// parent code
+			waitpid(k, &status, 0);
+		}
+	}
 }
