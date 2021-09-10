@@ -75,7 +75,7 @@ NextCharCategory parse_next_char(const char c)
     return OTHERS;
 }
 
-int parse_command(const char *const command, char *arguments[])
+void parse_command(const char *const command, char *arguments[])
 {
     Effect effect;
     State state = LOOK_FOR_ARG;
@@ -129,6 +129,11 @@ int parse_command(const char *const command, char *arguments[])
         arguments[arguments_idx++] = argument;
 
     arguments[arguments_idx] = NULL;
+}
 
-    return 0;
+void clear_arguments(char *arguments[])
+{
+    size_t i = 0;
+    while (arguments[i])
+        free(arguments[i++]);
 }

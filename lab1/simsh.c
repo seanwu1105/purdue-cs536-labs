@@ -7,19 +7,10 @@
 #include <string.h>
 #include "parse_command.h"
 
+#define ARGUMENTS_SIZE 100
+
 int main(void)
 {
-	// char buf[100] = "ls -a --version -c hello -s \"hello world\" --escape \"Escape before \\\" after\"";
-	// char *arguments[100];
-	// int r = parse_command(buf, arguments);
-
-	// size_t i = 0;
-
-	// while (arguments[i])
-	// {
-	// 	printf("%s[END]\n", arguments[i++]);
-	// }
-
 	pid_t k;
 	char buf[100];
 	int status;
@@ -38,21 +29,17 @@ int main(void)
 			continue;
 		buf[len - 1] = '\0';
 
-		// char *arguments[100];
-		// int r = parse_command(buf, arguments);
-
-		// size_t i = 0;
-
-		// while (arguments[i])
-		// {
-		// 	printf("%s[END]\n", arguments[i++]);
-		// }
+		char *arguments[ARGUMENTS_SIZE];
+		parse_command(buf, arguments);
 
 		k = fork();
 		if (k == 0)
 		{
 			// child code
-			if (execlp(buf, buf, NULL) == -1) // if execution failed, terminate child
+			int result = execvp(arguments[0], arguments);
+			clear_arguments(arguments);
+
+			if (result == -1) // if execution failed, terminate child
 				exit(1);
 		}
 		else
@@ -61,4 +48,6 @@ int main(void)
 			waitpid(k, &status, 0);
 		}
 	}
+
+	return 0;
 }
