@@ -5,9 +5,21 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <string.h>
+#include "parse_command.h"
 
 int main(void)
 {
+	// char buf[100] = "ls -a --version -c hello -s \"hello world\" --escape \"Escape before \\\" after\"";
+	// char *arguments[100];
+	// int r = parse_command(buf, arguments);
+
+	// size_t i = 0;
+
+	// while (arguments[i])
+	// {
+	// 	printf("%s[END]\n", arguments[i++]);
+	// }
+
 	pid_t k;
 	char buf[100];
 	int status;
@@ -25,6 +37,16 @@ int main(void)
 		if (len == 1) // only return key pressed
 			continue;
 		buf[len - 1] = '\0';
+
+		// char *arguments[100];
+		// int r = parse_command(buf, arguments);
+
+		// size_t i = 0;
+
+		// while (arguments[i])
+		// {
+		// 	printf("%s[END]\n", arguments[i++]);
+		// }
 
 		k = fork();
 		if (k == 0)
