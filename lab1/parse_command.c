@@ -8,7 +8,7 @@ typedef enum
 {
     LOOK_FOR_ARG,
     IN_ARG,
-    IN_QUOTED_ARG,
+    IN_QUOTE,
     ESCAPED_IN_ARG,
     ESCAPED_IN_QUOTED_ARG,
 } State;
@@ -39,29 +39,29 @@ typedef struct
 const Effect TRANSITIONS[5][4] = {
     // LOOK_FOR_ARG
     {{LOOK_FOR_ARG, IGNORE},           // WHITESPACE
-     {IN_QUOTED_ARG, CREATE_ARG},      // DOUBLE_QUOTE
+     {IN_QUOTE, CREATE_ARG},           // DOUBLE_QUOTE
      {ESCAPED_IN_ARG, CREATE_ARG},     // ESCAPE
      {IN_ARG, CREATE_AND_ADD_TO_ARG}}, // OTHERS
     // IN_ARG
     {{LOOK_FOR_ARG, CLOSE_ARG}, // WHITESPACE
-     {IN_ARG, ADD_TO_ARG},      // DOUBLE_QUOTE
+     {IN_QUOTE, IGNORE},        // DOUBLE_QUOTE
      {ESCAPED_IN_ARG, IGNORE},  // ESCAPE
      {IN_ARG, ADD_TO_ARG}},     // OTHERS
-    // IN_QUOTED_ARG
-    {{IN_QUOTED_ARG, ADD_TO_ARG},     // WHITESPACE
-     {LOOK_FOR_ARG, CLOSE_ARG},       // DOUBLE_QUOTE
+    // IN_QUOTE
+    {{IN_QUOTE, ADD_TO_ARG},          // WHITESPACE
+     {IN_ARG, IGNORE},                // DOUBLE_QUOTE
      {ESCAPED_IN_QUOTED_ARG, IGNORE}, // ESCAPE
-     {IN_QUOTED_ARG, ADD_TO_ARG}},    // OTHERS
+     {IN_QUOTE, ADD_TO_ARG}},         // OTHERS
     // ESCAPED_IN_ARG
     {{IN_ARG, ADD_TO_ARG},  // WHITESPACE
      {IN_ARG, ADD_TO_ARG},  // DOUBLE_QUOTE
      {IN_ARG, ADD_TO_ARG},  // ESCAPE
      {IN_ARG, ADD_TO_ARG}}, // OTHERS
     // ESCAPED_IN_QUOTED_ARG
-    {{IN_QUOTED_ARG, ADD_TO_ARG},  // WHITESPACE
-     {IN_QUOTED_ARG, ADD_TO_ARG},  // DOUBLE_QUOTE
-     {IN_QUOTED_ARG, ADD_TO_ARG},  // ESCAPE
-     {IN_QUOTED_ARG, ADD_TO_ARG}}, // OTHERS
+    {{IN_QUOTE, ADD_TO_ARG},  // WHITESPACE
+     {IN_QUOTE, ADD_TO_ARG},  // DOUBLE_QUOTE
+     {IN_QUOTE, ADD_TO_ARG},  // ESCAPE
+     {IN_QUOTE, ADD_TO_ARG}}, // OTHERS
 };
 
 NextCharCategory parse_next_char(const char c)
