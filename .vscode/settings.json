@@ -1,7 +1,11 @@
 {
-    "editor.formatOnSave": true,
-    "files.associations": {
-        "parse_command.h": "c",
-        "stdio.h": "c"
-    }
+  "editor.formatOnSave": true,
+  "files.associations": {
+    "parse_command.h": "c",
+    "stdio.h": "c"
+  },
+  "[json, jsonc, markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "prettier.proseWrap": "always"
 }
