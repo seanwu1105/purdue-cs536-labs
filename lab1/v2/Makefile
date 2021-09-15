@@ -1,16 +1,17 @@
 CC = gcc
 CFLAGS = -g -Wall
-exe = simsh1.bin
-objects = simsh1.o parse_command.o
 
 .PHONY: all
-all: $(exe)
+all: commandserver.bin commandclient.bin
 
-$(exe): $(objects)
-	$(CC) -o $(exe) $(objects)
+commandserver.bin: simsh1.o parse_command.o
+	$(CC) -o commandserver.bin simsh1.o parse_command.o
 
-$(objects): %.o: %.c
+commandclient.bin: commandclient.o
+	$(CC) -o commandclient.bin commandclient.o
+
+simsh1.o parse_command.o commandclient.o: %.o: %.c
 
 .PHONY: clean
 clean:
-	$(RM) *.o *.bin
+	$(RM) *.o *.bin *.dat

@@ -9,7 +9,7 @@
 
 #define ARGUMENTS_SIZE 100
 
-int main(void)
+int main()
 {
 	pid_t k;
 	char buf[100];

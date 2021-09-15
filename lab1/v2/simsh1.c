@@ -5,16 +5,35 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include "parse_command.h"
+#include "fifo_info.h"
 
 #define ARGUMENTS_SIZE 100
 
-int main(void)
+int read_command(char *fifo_filename, char *command)
+{
+	int fd = open(fifo_filename, O_RDONLY);
+	if (fd == -1)
+	{
+		close(fd);
+		return -1;
+	}
+	if (read(fd, command, sizeof(command)) == -1)
+	{
+		close(fd);
+		return -1;
+	}
+	close(fd);
+	return 0;
+}
+
+int start_server(char *fifo_filename)
 {
 	pid_t k;
 	char buf[100];
 	int status;
-	int len;
 
 	while (1)
 	{
@@ -22,12 +41,9 @@ int main(void)
 		// print prompt
 		fprintf(stdout, "[%d]$ ", getpid());
 
-		// read command from stdin
-		fgets(buf, 100, stdin);
-		len = strlen(buf);
-		if (len == 1) // only return key pressed
-			continue;
-		buf[len - 1] = '\0';
+		// read command from FIFO
+		if (read_command(fifo_filename, buf))
+			return -1;
 
 		char *arguments[ARGUMENTS_SIZE];
 		parse_command(buf, arguments);
@@ -36,11 +52,12 @@ int main(void)
 		if (k == 0)
 		{
 			// child code
-			int result = execvp(arguments[0], arguments);
+			int status = execvp(arguments[0], arguments);
 			clear_arguments(arguments);
-
-			if (result == -1) // if execution failed, terminate child
+			if (status == -1) // if execution failed, terminate child
 				exit(1);
+
+			printf("\n");
 		}
 		else
 		{
@@ -49,5 +66,19 @@ int main(void)
 		}
 	}
 
+	return 0;
+}
+
+int main()
+{
+	if (mkfifo(FIFO_FILENAME, S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH) == -1)
+		return -1;
+
+	printf("FIFO created.\n");
+
+	int status = start_server(FIFO_FILENAME);
+	unlink(FIFO_FILENAME);
+	if (status == -1)
+		return -1;
 	return 0;
 }
