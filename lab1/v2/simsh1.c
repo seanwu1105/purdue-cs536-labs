@@ -7,12 +7,12 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include "parse_command.h"
+#include "../lib/parse_command.h"
 #include "fifo_info.h"
 
-#define ARGUMENTS_SIZE 100
+#define BUFFER_SIZE 100
 
-int read_command(char *fifo_filename, char *command)
+int read_command(char *fifo_filename, char *command, size_t command_size)
 {
 	int fd = open(fifo_filename, O_RDONLY);
 	if (fd == -1)
@@ -20,7 +20,7 @@ int read_command(char *fifo_filename, char *command)
 		close(fd);
 		return -1;
 	}
-	if (read(fd, command, sizeof(command)) == -1)
+	if (read(fd, command, sizeof(char) * command_size) == -1)
 	{
 		close(fd);
 		return -1;
@@ -32,7 +32,7 @@ int read_command(char *fifo_filename, char *command)
 int start_server(char *fifo_filename)
 {
 	pid_t k;
-	char buf[100];
+	char buf[BUFFER_SIZE];
 	int status;
 
 	while (1)
@@ -42,22 +42,22 @@ int start_server(char *fifo_filename)
 		fprintf(stdout, "[%d]$ ", getpid());
 
 		// read command from FIFO
-		if (read_command(fifo_filename, buf))
+		if (read_command(fifo_filename, buf, BUFFER_SIZE))
 			return -1;
 
-		char *arguments[ARGUMENTS_SIZE];
+		char *arguments[BUFFER_SIZE];
 		parse_command(buf, arguments);
 
+		fflush(stdout);
 		k = fork();
 		if (k == 0)
 		{
 			// child code
-			int status = execvp(arguments[0], arguments);
+			int result = execvp(arguments[0], arguments);
 			clear_arguments(arguments);
-			if (status == -1) // if execution failed, terminate child
-				exit(1);
 
-			printf("\n");
+			if (result == -1) // if execution failed, terminate child
+				exit(EXIT_FAILURE);
 		}
 		else
 		{
@@ -69,16 +69,27 @@ int start_server(char *fifo_filename)
 	return 0;
 }
 
+void signal_handler(int _)
+{
+	unlink(FIFO_FILENAME);
+	exit(EXIT_SUCCESS);
+}
+
 int main()
 {
 	if (mkfifo(FIFO_FILENAME, S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH) == -1)
 		return -1;
 
-	printf("FIFO created.\n");
+	signal(SIGINT, signal_handler);
 
 	int status = start_server(FIFO_FILENAME);
+
 	unlink(FIFO_FILENAME);
 	if (status == -1)
 		return -1;
 	return 0;
 }
+
+// should test: multiple commands in single pipe write
+// should test: atomic write
+// should test: multiple client long tasks

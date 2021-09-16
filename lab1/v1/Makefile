@@ -7,7 +7,7 @@ objects = simsh1.o ../lib/parse_command.o
 all: $(exe)
 
 $(exe): $(objects)
-	$(CC) -o $(exe) $(objects)
+	$(CC) -o $@ $^
 
 $(objects): %.o: %.c
 

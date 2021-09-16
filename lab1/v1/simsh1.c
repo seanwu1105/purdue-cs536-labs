@@ -32,6 +32,7 @@ int main()
 		char *arguments[ARGUMENTS_SIZE];
 		parse_command(buf, arguments);
 
+		fflush(stdout);
 		k = fork();
 		if (k == 0)
 		{
@@ -40,7 +41,7 @@ int main()
 			clear_arguments(arguments);
 
 			if (result == -1) // if execution failed, terminate child
-				exit(1);
+				exit(EXIT_FAILURE);
 		}
 		else
 		{
