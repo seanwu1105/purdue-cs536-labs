@@ -12,39 +12,33 @@
 
 #define BUFFER_SIZE 100
 
-int read_command(char *fifo_filename, char *command, size_t command_size)
-{
-	int fd = open(fifo_filename, O_RDONLY);
-	if (fd == -1)
-	{
-		close(fd);
-		return -1;
-	}
-	int command_length = read(fd, command, sizeof(char) * command_size);
-	close(fd);
-	return command_length;
-}
+int fd;
 
 int start_server(char *fifo_filename)
 {
 	pid_t k;
-	char buf[BUFFER_SIZE];
+	char command[BUFFER_SIZE];
 	int status;
 
 	while (1)
 	{
 		// read command from FIFO
-		int command_length = read_command(fifo_filename, buf, BUFFER_SIZE);
+		int command_length = read(fd, command, BUFFER_SIZE * sizeof(char));
 		if (command_length == -1)
 			return -1;
 		else if (command_length == 0) // EOF
 			continue;
 
+		for (int i = 0; i < 10; i++)
+		{
+			printf("%c\t(%d)\n", command[i], command[i]);
+		}
+
 		// print prompt
 		fprintf(stdout, "[%d]$ ", getpid());
 
 		char *arguments[BUFFER_SIZE];
-		parse_command(buf, arguments);
+		parse_command(command, arguments);
 
 		fflush(stdout);
 		k = fork();
@@ -69,6 +63,7 @@ int start_server(char *fifo_filename)
 
 void signal_handler(int _)
 {
+	close(fd);
 	unlink(FIFO_FILENAME);
 	exit(EXIT_SUCCESS);
 }
@@ -77,11 +72,19 @@ int main()
 {
 	if (mkfifo(FIFO_FILENAME, S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH) == -1)
 		return -1;
+	fd = open(FIFO_FILENAME, O_RDONLY);
+	if (fd == -1)
+	{
+		close(fd);
+		unlink(FIFO_FILENAME);
+		return -1;
+	}
 
 	signal(SIGINT, signal_handler);
 
 	int status = start_server(FIFO_FILENAME);
 
+	close(fd);
 	unlink(FIFO_FILENAME);
 	if (status == -1)
 		return -1;
