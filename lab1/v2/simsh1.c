@@ -28,6 +28,7 @@ int start_server(char *fifo_filename)
 			return -1;
 		else if (command_length == 0) // EOF
 			continue;
+		printf("%d\n", command_length);
 
 		for (int i = 0; i < 10; i++)
 		{
@@ -46,7 +47,6 @@ int start_server(char *fifo_filename)
 		{
 			// child code
 			int result = execvp(arguments[0], arguments);
-			clear_arguments(arguments);
 
 			if (result == -1) // if execution failed, terminate child
 				exit(EXIT_FAILURE);
