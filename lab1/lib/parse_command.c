@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "parse_command.h"
 
 #define ARGUMENT_SIZE 100
@@ -82,8 +83,8 @@ void parse_command(const char *const command, char *arguments[])
     NextCharCategory next_char_category;
 
     const char *next_char = command;
-    char *argument;
-    size_t argument_idx;
+    char *argument = "\0";
+    size_t argument_idx = 0;
     size_t arguments_idx = 0;
 
     while (*next_char)
@@ -125,7 +126,7 @@ void parse_command(const char *const command, char *arguments[])
     if (argument[argument_idx] != '\0')
         argument[argument_idx] = '\0';
 
-    if (effect.action != CLOSE_ARG)
+    if (effect.action != CLOSE_ARG && strlen(argument))
         arguments[arguments_idx++] = argument;
 
     arguments[arguments_idx] = NULL;

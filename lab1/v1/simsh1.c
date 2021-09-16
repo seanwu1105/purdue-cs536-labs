@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <string.h>
-#include "parse_command.h"
+#include "../lib/parse_command.h"
 
 #define ARGUMENTS_SIZE 100
 

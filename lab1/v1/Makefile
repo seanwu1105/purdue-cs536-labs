@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -g -Wall
 exe = simsh1.bin
-objects = simsh1.o parse_command.o
+objects = simsh1.o ../lib/parse_command.o
 
 .PHONY: all
 all: $(exe)
