@@ -20,13 +20,9 @@ int read_command(char *fifo_filename, char *command, size_t command_size)
 		close(fd);
 		return -1;
 	}
-	if (read(fd, command, sizeof(char) * command_size) == -1)
-	{
-		close(fd);
-		return -1;
-	}
+	int command_length = read(fd, command, sizeof(char) * command_size);
 	close(fd);
-	return 0;
+	return command_length;
 }
 
 int start_server(char *fifo_filename)
@@ -37,13 +33,15 @@ int start_server(char *fifo_filename)
 
 	while (1)
 	{
+		// read command from FIFO
+		int command_length = read_command(fifo_filename, buf, BUFFER_SIZE);
+		if (command_length == -1)
+			return -1;
+		else if (command_length == 0) // EOF
+			continue;
 
 		// print prompt
 		fprintf(stdout, "[%d]$ ", getpid());
-
-		// read command from FIFO
-		if (read_command(fifo_filename, buf, BUFFER_SIZE))
-			return -1;
 
 		char *arguments[BUFFER_SIZE];
 		parse_command(buf, arguments);
