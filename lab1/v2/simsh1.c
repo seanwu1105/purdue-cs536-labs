@@ -7,12 +7,11 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <limits.h>
 #include "../lib/parse_command.h"
 #include "fifo_info.h"
 
-#define BUFFER_SIZE 100
-
-int read_command(char *fifo_filename, char *command, size_t command_size)
+ssize_t read_command(char *fifo_filename, char *command, size_t command_len)
 {
 	int fd = open(fifo_filename, O_RDONLY);
 	if (fd == -1)
@@ -20,7 +19,7 @@ int read_command(char *fifo_filename, char *command, size_t command_size)
 		close(fd);
 		return -1;
 	}
-	int command_length = read(fd, command, sizeof(char) * command_size);
+	ssize_t command_length = read(fd, command, sizeof(char) * command_len);
 	close(fd);
 	return command_length;
 }
@@ -28,13 +27,13 @@ int read_command(char *fifo_filename, char *command, size_t command_size)
 int start_server(char *fifo_filename)
 {
 	pid_t k;
-	char buf[BUFFER_SIZE];
+	char buf[PIPE_BUF];
 	int status;
 
 	while (1)
 	{
 		// read command from FIFO
-		int command_length = read_command(fifo_filename, buf, BUFFER_SIZE);
+		ssize_t command_length = read_command(fifo_filename, buf, PIPE_BUF);
 		if (command_length == -1)
 			return -1;
 		else if (command_length == 0) // EOF
@@ -43,7 +42,7 @@ int start_server(char *fifo_filename)
 		// print prompt
 		fprintf(stdout, "[%d]$ ", getpid());
 
-		char *arguments[BUFFER_SIZE];
+		char *arguments[PIPE_BUF];
 		parse_command(buf, arguments);
 
 		fflush(stdout);
@@ -89,5 +88,4 @@ int main()
 }
 
 // should test: multiple commands in single pipe write
-// should test: atomic write
 // should test: multiple client long tasks

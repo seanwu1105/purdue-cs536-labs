@@ -7,7 +7,7 @@
 #include <string.h>
 #include "../lib/parse_command.h"
 
-#define ARGUMENTS_SIZE 100
+#define ARGUMENTS_LEN 100
 
 int main()
 {
@@ -29,7 +29,7 @@ int main()
 			continue;
 		buf[len - 1] = '\0';
 
-		char *arguments[ARGUMENTS_SIZE];
+		char *arguments[ARGUMENTS_LEN];
 		parse_command(buf, arguments);
 
 		fflush(stdout);
