@@ -11,9 +11,12 @@ int main()
     {
         int fd = open(FIFO_FILENAME, O_WRONLY);
         if (fd == -1)
+        {
+            fprintf(stderr, "Cannot open FIFO: %s\n", FIFO_FILENAME);
             return -1;
+        }
         char command[PIPE_BUF];
-        printf("> ");
+        fprintf(stdout, "> ");
         fgets(command, PIPE_BUF, stdin);
         size_t len = strlen(command) + 1;
         if (len * sizeof(char) <= PIPE_BUF)

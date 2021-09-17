@@ -65,7 +65,7 @@ int start_server(char *fifo_filename)
 
 				if (result == -1) // if execution failed, terminate child
 				{
-					printf("Command not found: %s\n", command);
+					fprintf(stderr, "Command not found: %s\n", command);
 					exit(EXIT_FAILURE);
 				}
 			}
