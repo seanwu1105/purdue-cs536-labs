@@ -26,3 +26,40 @@ task in a separate function that is placed in its own file. Provide a Makefile
 in v1/ that compiles your code and generates a binary executable simsh1.bin.
 Compile, test, and verify that your code works correctly. Annotate your code so
 that a competent programmer can understand what you are aiming to do.
+
+## Getting Started
+
+Build `simsh1.bin` with the `make` command in `/v1` directory.
+
+```shell
+make
+```
+
+Start the server.
+
+```shell
+./simsh1.bin
+```
+
+Now, you can enter commands in the terminal running the `simsh1.bin` executable.
+For example, type `ls -la` in one of the client terminal. You should see the
+execution result of the corresponding command showing on the terminal.
+
+To stop the server, send `SIGINT` with <kbd>ctrl</kbd> + <kbd>c</kbd> on Linux.
+
+To clean up for project rebuild, use the following command with `make`.
+
+```shell
+make clean
+```
+
+## Project Structure
+
+### `simsh1.c`
+
+The source of `simsh1.bin`.
+
+### `parse_command.c`
+
+Parse the user input command from string (`char*`) into argv (`char * const *`)
+for `execvp`. Able to handle double quotes and escaped characters.

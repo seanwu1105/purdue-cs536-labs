@@ -30,3 +30,90 @@ v2/ to compile and generate commandserver.bin and commandclient.bin. Create
 README under v2/ that specifies the files and functions of your code, and a
 brief description of their roles. Test your client/server app with multiple
 client processes and verify correctness.
+
+## Getting Started
+
+Build `commandserver.bin` and `commandclient.bin` with the `make` command in
+`/v2` directory.
+
+```shell
+make
+```
+
+Start the server first to create FIFO `serverfifo.dat` automatically.
+
+```shell
+./commandserver.bin
+```
+
+After the server is running, create new clients in new terminals.
+
+```shell
+./commandclient.bin
+```
+
+Now, you can enter commands in the new terminals running the `commandclient.bin`
+executable. For example, type `ls -la` in one of the client terminal. You should
+see the execution result of the corresponding command showing on the server
+terminal.
+
+To stop the server or clients, send `SIGINT` with <kbd>ctrl</kbd> + <kbd>c</kbd>
+on Linux. Once the server has been stopped, clients cannot send commands. Doing
+so will terminate the clients immediately.
+
+To clean up for project rebuild, use the following command with `make`.
+
+```shell
+make clean
+```
+
+## Atomicity of `write()`
+
+To avoid the potential for interleaving of characters belonging to two or more
+requests from clients writing into FIFO, we limit the length of command in
+client to `PIPE_BUF`.
+
+## Blocking Server Behavior
+
+Note that the server will be blocked when there is a task has not competed. You
+can test this behavior with the `./test/long.py` file simulating a long-running
+task.
+
+For example,
+
+```shell
+# in client terminal A
+python ./test/long.py # block server for 5 seconds
+```
+
+```shell
+# in client terminal B
+ps
+ls
+```
+
+The server will execute the `ps` and `ls` commands after the
+`python ./test/long.py` command has finished.
+
+## Project Structure
+
+### `simsh1.c`
+
+The source of `commandserver.bin`. The reader of the FIFO (`serverfifo.dat`)
+consumes commands from multiple writers of the FIFO. `commandserver.bin` can
+only have one instance at a time in one directory.
+
+### `commandclient.c`
+
+The source of `commandclient.bin`. The writer of the FIFO (`serverfifo.dat`)
+feeds commands expected to be read by `commandserver.bin`. Can have multiple
+instance at a time in one directory.
+
+### `fifo_info.h`
+
+Store the sharing information about the FIFO.
+
+### `parse_command.c`
+
+Parse the user input command from string (`char*`) into argv (`char * const *`)
+for `execvp`. Able to handle double quotes and escaped characters.
