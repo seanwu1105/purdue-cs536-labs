@@ -38,7 +38,6 @@ int main()
 		{
 			// child code
 			int result = execvp(arguments[0], arguments);
-			clear_arguments(arguments);
 
 			if (result == -1) // if execution failed, terminate child
 				exit(EXIT_FAILURE);

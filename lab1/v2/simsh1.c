@@ -18,44 +18,50 @@ int fd;
 int start_server(char *fifo_filename)
 {
 	pid_t k;
-	char command[BUFFER_SIZE];
+	char buf[BUFFER_SIZE];
 	int status;
 
 	while (1)
 	{
 		// read command from FIFO
-		ssize_t command_length = read(fd, command, BUFFER_SIZE * sizeof(char));
+		ssize_t command_length = read(fd, buf, BUFFER_SIZE * sizeof(char));
 		if (command_length == -1)
 			return -1;
 		else if (command_length == 0) // EOF
 			continue;
-		printf("%ld\n", command_length);
 
-		for (int i = 0; i < 10; i++)
+		// split commands from buf with '\0' as delimiter
+		char command[BUFFER_SIZE];
+		size_t buf_idx = 0, command_idx = 0;
+		while (buf_idx < command_length)
 		{
-			printf("%c\t(%d)\n", command[i], command[i]);
-		}
+			command_idx = 0;
+			while (buf[buf_idx] != '\0')
+				command[command_idx++] = buf[buf_idx++];
+			command[command_idx] = '\0';
+			buf_idx++;
 
-		// print prompt
-		fprintf(stdout, "[%d]$ ", getpid());
+			// print prompt
+			fprintf(stdout, "[%d]$ ", getpid());
 
-		char *arguments[BUFFER_SIZE];
-		parse_command(command, arguments);
+			char *arguments[BUFFER_SIZE];
+			parse_command(command, arguments);
 
-		fflush(stdout);
-		k = fork();
-		if (k == 0)
-		{
-			// child code
-			int result = execvp(arguments[0], arguments);
+			fflush(stdout);
+			k = fork();
+			if (k == 0)
+			{
+				// child code
+				int result = execvp(arguments[0], arguments);
 
-			if (result == -1) // if execution failed, terminate child
-				exit(EXIT_FAILURE);
-		}
-		else
-		{
-			// parent code
-			waitpid(k, &status, 0);
+				if (result == -1) // if execution failed, terminate child
+					exit(EXIT_FAILURE);
+			}
+			else
+			{
+				// parent code
+				waitpid(k, &status, 0);
+			}
 		}
 	}
 
@@ -93,4 +99,3 @@ int main()
 }
 
 // should test: multiple commands in single pipe write
-// should test: multiple client long tasks
