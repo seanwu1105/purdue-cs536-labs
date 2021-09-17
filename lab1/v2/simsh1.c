@@ -30,16 +30,25 @@ int start_server(char *fifo_filename)
 		else if (command_length == 0) // EOF
 			continue;
 
-		// split commands from buf with '\0' as delimiter
+		// split commands from buf with '\n' as delimiter
 		char command[BUFFER_SIZE];
 		size_t buf_idx = 0, command_idx = 0;
 		while (buf_idx < command_length)
 		{
 			command_idx = 0;
-			while (buf[buf_idx] != '\0')
-				command[command_idx++] = buf[buf_idx++];
+			while (buf_idx < command_length && buf[buf_idx] != '\n')
+				if (buf[buf_idx] == '\0') // ignore '\0' as we use '\n' instead
+					buf_idx++;
+				else
+					command[command_idx++] = buf[buf_idx++];
+
+			buf_idx++; // increase buf_idx to ignore '\n'
+
+			if (command_idx == 0) // empty command
+				continue;
+
+			// close command string as we ignore it before
 			command[command_idx] = '\0';
-			buf_idx++;
 
 			// print prompt
 			fprintf(stdout, "[%d]$ ", getpid());
@@ -97,5 +106,3 @@ int main()
 		return -1;
 	return 0;
 }
-
-// should test: multiple commands in single pipe write

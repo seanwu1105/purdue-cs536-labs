@@ -7,7 +7,6 @@
 
 int main()
 {
-
     while (1)
     {
         int fd = open(FIFO_FILENAME, O_WRONLY);
