@@ -18,16 +18,16 @@ int main()
 
 	while (1)
 	{
-
 		// print prompt
 		fprintf(stdout, "[%d]$ ", getpid());
 
 		// read command from stdin
-		fgets(buf, 100, stdin);
+		if (!fgets(buf, 100, stdin))
+			break;
+
 		len = strlen(buf);
 		if (len == 1) // only return key pressed
 			continue;
-		buf[len - 1] = '\0';
 
 		char *arguments[ARGUMENTS_LEN];
 		parse_command(buf, arguments);

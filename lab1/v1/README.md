@@ -54,6 +54,15 @@ To clean up for project rebuild, use the following command with `make`.
 make clean
 ```
 
+## File as Client Input
+
+You can use a file storing commands separated by `\n` as client input. For
+example:
+
+```shell
+./simsh1.bin < ../test/commands.txt
+```
+
 ## Project Structure
 
 ### `simsh1.c`

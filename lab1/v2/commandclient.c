@@ -17,7 +17,8 @@ int main()
         }
         char command[PIPE_BUF];
         fprintf(stdout, "> ");
-        fgets(command, PIPE_BUF, stdin);
+        if (!fgets(command, PIPE_BUF, stdin))
+            break;
         size_t len = strlen(command) + 1;
         if (len * sizeof(char) <= PIPE_BUF)
             write(fd, command, len);

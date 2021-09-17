@@ -73,6 +73,15 @@ To avoid the potential for interleaving of characters belonging to two or more
 requests from clients writing into FIFO, we limit the length of command in
 client to `PIPE_BUF`.
 
+## File as Client Input
+
+You can use a file storing commands separated by `\n` as client input. For
+example:
+
+```shell
+./commandclient.bin < ../test/commands.txt
+```
+
 ## Blocking Server Behavior
 
 Note that the server will be blocked when there is a task has not competed. You
@@ -83,7 +92,7 @@ For example,
 
 ```shell
 # in client terminal A
-python ./test/long.py # block server for 5 seconds
+python ../test/long.py # block server for 5 seconds
 ```
 
 ```shell
