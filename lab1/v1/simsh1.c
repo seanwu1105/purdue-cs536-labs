@@ -40,7 +40,10 @@ int main()
 			int result = execvp(arguments[0], arguments);
 
 			if (result == -1) // if execution failed, terminate child
+			{
+				printf("Command not found: %s\n", buf);
 				exit(EXIT_FAILURE);
+			}
 		}
 		else
 		{

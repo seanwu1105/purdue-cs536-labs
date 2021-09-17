@@ -64,7 +64,10 @@ int start_server(char *fifo_filename)
 				int result = execvp(arguments[0], arguments);
 
 				if (result == -1) // if execution failed, terminate child
+				{
+					printf("Command not found: %s\n", command);
 					exit(EXIT_FAILURE);
+				}
 			}
 			else
 			{
