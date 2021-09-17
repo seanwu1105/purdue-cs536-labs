@@ -3,7 +3,9 @@
   "files.associations": {
     "parse_command.h": "c",
     "stdio.h": "c",
-    "fcntl.h": "c"
+    "fcntl.h": "c",
+    "fifo_info.h": "c",
+    "limits.h": "c"
   },
   "[json, jsonc, markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

@@ -9,10 +9,10 @@ int main()
 {
     while (1)
     {
-        int fd = open(FIFO_FILENAME, O_WRONLY);
+        int fd = open(SERVER_FIFO_NAME, O_WRONLY);
         if (fd == -1)
         {
-            fprintf(stderr, "Cannot open FIFO: %s\n", FIFO_FILENAME);
+            fprintf(stderr, "Cannot open FIFO: %s\n", SERVER_FIFO_NAME);
             return -1;
         }
         char command[PIPE_BUF];

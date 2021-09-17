@@ -7,12 +7,12 @@
 #include <string.h>
 #include "../lib/parse_command.h"
 
-#define ARGUMENTS_LEN 100
+#define BUFFER_LEN 1000
 
 int main()
 {
 	pid_t k;
-	char buf[100];
+	char buf[BUFFER_LEN];
 	int status;
 	int len;
 
@@ -29,7 +29,7 @@ int main()
 		if (len == 1) // only return key pressed
 			continue;
 
-		char *arguments[ARGUMENTS_LEN];
+		char *arguments[BUFFER_LEN];
 		parse_command(buf, arguments);
 
 		fflush(stdout);
