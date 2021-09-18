@@ -60,7 +60,7 @@ int start_server()
 				return -1;
 
 			// redirect stdout to client FIFO file descriptor
-			if (dup2(client_fifo_fd, STDOUT_FILENO) == -1)
+			if (dup2(client_fifo_fd, STDOUT_FILENO) == -1 || dup2(client_fifo_fd, STDERR_FILENO) == -1)
 				exit(EXIT_FAILURE);
 
 			int result = execvp(arguments[0], arguments);
