@@ -32,10 +32,7 @@ int start_server()
 		if (command_len == -1)
 			return -1;
 		else if (command_len == 0) // EOF
-			continue;
-
-		// print prompt
-		fprintf(stdout, "[%d]$ ", getpid());
+			continue;			   // busy wait for the new command from clients
 
 		char *pid_str = strtok(buf, "\n");
 		char *command = strtok(NULL, "\0");
@@ -43,8 +40,12 @@ int start_server()
 		if (!pid_str || !command)
 			return -1;
 
+		fprintf(stdout, "[%s]$ %s", pid_str, command);
+
 		char *arguments[PIPE_BUF];
 		parse_command(command, arguments);
+
+		int client_fifo_fd;
 
 		fflush(stdout); // flush stdout before forking
 		k = fork();
@@ -55,10 +56,9 @@ int start_server()
 			// open client FIFO according to the parsed pid
 			char client_fifo_filename[100] = CLIENT_FIFO_NAME_PREFIX;
 			strcat(client_fifo_filename, pid_str);
-			int client_fifo_fd = open(client_fifo_filename, O_WRONLY);
+			client_fifo_fd = open(client_fifo_filename, O_WRONLY);
 			if (client_fifo_fd == -1)
 				return -1;
-
 			// redirect stdout to client FIFO file descriptor
 			if (dup2(client_fifo_fd, STDOUT_FILENO) == -1 || dup2(client_fifo_fd, STDERR_FILENO) == -1)
 				exit(EXIT_FAILURE);
@@ -67,7 +67,7 @@ int start_server()
 
 			if (result == -1) // if execution failed, terminate child
 			{
-				fprintf(stderr, "Command not found: %s\n", command);
+				fprintf(stderr, "Command not found: %s", command);
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -75,6 +75,7 @@ int start_server()
 		{
 			// parent code
 			waitpid(k, &status, 0);
+			close(client_fifo_fd);
 		}
 	}
 

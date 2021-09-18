@@ -1,3 +1,5 @@
+// XXX: Delay reading on server busy.
+
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -57,7 +59,11 @@ int start_client()
             return -1;
 
         char buf[PIPE_BUF];
-        ssize_t result_len = read(client_fifo_fd, buf, PIPE_BUF);
+        ssize_t result_len;
+        while (result_len = read(client_fifo_fd, buf, PIPE_BUF), result_len == 0)
+            ; // busy wait for the result from server
+
+        close(client_fifo_fd);
         if (result_len == -1)
             return -1;
         if (result_len == 0)
