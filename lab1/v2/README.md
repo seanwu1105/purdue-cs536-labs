@@ -36,19 +36,19 @@ multiple client processes and verify correctness.
 Build `commandserver.bin` and `commandclient.bin` with the `make` command in
 `/v2` directory.
 
-```shell
+```sh
 make
 ```
 
-Start the server first to create FIFO `serverfifo.dat` automatically.
+Start the server first to create a FIFO `serverfifo.dat` automatically.
 
-```shell
+```sh
 ./commandserver.bin
 ```
 
 After the server is running, create new clients in new terminals.
 
-```shell
+```sh
 ./commandclient.bin
 ```
 
@@ -61,9 +61,10 @@ To stop the server or clients, send `SIGINT` with <kbd>ctrl</kbd> + <kbd>c</kbd>
 on Linux. Once the server has been stopped, clients cannot send commands. Doing
 so will terminate the clients immediately.
 
-To clean up for project rebuild, use the following command with `make`.
+To clean up for project rebuild on failed, use the following command with
+`make`.
 
-```shell
+```sh
 make clean
 ```
 
@@ -78,7 +79,7 @@ client to `PIPE_BUF`.
 You can use a file storing commands separated by `\n` as client input. For
 example:
 
-```shell
+```sh
 ./commandclient.bin < ../test/commands.txt
 ```
 
@@ -90,12 +91,12 @@ task.
 
 For example,
 
-```shell
+```sh
 # in client terminal A
 python ../test/long.py # block server for 5 seconds
 ```
 
-```shell
+```sh
 # in client terminal B
 ps
 ls

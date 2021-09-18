@@ -32,13 +32,13 @@ you are aiming to do.
 
 Build `simsh1.bin` with the `make` command in `/v1` directory.
 
-```shell
+```sh
 make
 ```
 
 Start the server.
 
-```shell
+```sh
 ./simsh1.bin
 ```
 
@@ -50,7 +50,7 @@ To stop the server, send `SIGINT` with <kbd>ctrl</kbd> + <kbd>c</kbd> on Linux.
 
 To clean up for project rebuild, use the following command with `make`.
 
-```shell
+```sh
 make clean
 ```
 
@@ -59,7 +59,7 @@ make clean
 You can use a file storing commands separated by `\n` as client input. For
 example:
 
-```shell
+```sh
 ./simsh1.bin < ../test/commands.txt
 ```
 
