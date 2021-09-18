@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <limits.h>
-#include "fifo_info.h"
+#include "../lib/fifo_info.h"
 
 int main()
 {
@@ -15,9 +15,9 @@ int main()
             fprintf(stderr, "Cannot open FIFO: %s\n", SERVER_FIFO_NAME);
             return -1;
         }
-        char command[PIPE_BUF];
+        char command[PIPE_BUF * 2];
         fprintf(stdout, "> ");
-        if (!fgets(command, PIPE_BUF, stdin))
+        if (!fgets(command, sizeof(command), stdin))
             break;
         size_t len = strlen(command) + 1;
         if (len * sizeof(char) <= PIPE_BUF)
