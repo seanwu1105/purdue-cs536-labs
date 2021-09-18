@@ -92,6 +92,8 @@ void signal_handler(int _)
 
 int main()
 {
+	signal(SIGINT, signal_handler);
+
 	if (mkfifo(SERVER_FIFO_NAME, S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH) == -1)
 		return -1;
 	fd = open(SERVER_FIFO_NAME, O_RDONLY);
@@ -101,8 +103,6 @@ int main()
 		unlink(SERVER_FIFO_NAME);
 		return -1;
 	}
-
-	signal(SIGINT, signal_handler);
 
 	int status = start_server();
 

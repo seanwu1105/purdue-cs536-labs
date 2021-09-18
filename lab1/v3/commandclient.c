@@ -5,7 +5,7 @@
 #include <limits.h>
 #include <signal.h>
 #include <stdlib.h>
-#include "fifo_info.h"
+#include <sys/stat.h>
 #include "../lib/fifo_info.h"
 
 #define COMMAND_SIZE PIPE_BUF * 2
@@ -51,6 +51,7 @@ int start_client()
             fprintf(stderr, "Command length too long.\n");
         close(server_fifo_fd);
     }
+    return 0;
 }
 
 void signal_handler(int _)
@@ -61,6 +62,8 @@ void signal_handler(int _)
 
 int main()
 {
+    signal(SIGINT, signal_handler);
+
     get_client_fifo_name(client_fifo_name, sizeof(client_fifo_name));
 
     if (mkfifo(client_fifo_name, S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH) == -1)
@@ -72,8 +75,6 @@ int main()
         unlink(client_fifo_name);
         return -1;
     }
-
-    signal(SIGINT, signal_handler);
 
     int status = start_client();
 

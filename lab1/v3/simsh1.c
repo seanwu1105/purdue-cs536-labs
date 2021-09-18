@@ -34,50 +34,34 @@ int start_server()
 		else if (command_length == 0) // EOF
 			continue;
 
-		// split commands from buf with '\n' as delimiter
-		char command[PIPE_BUF];
-		size_t buf_idx = 0, command_idx = 0;
-		while (buf_idx < command_length)
+		// print prompt
+		fprintf(stdout, "[%d]$ ", getpid());
+
+		printf("%s", buf);
+
+		char *pid_str = strtok(buf, "\n");
+		char *command = strtok(NULL, "\0");
+
+		char *arguments[PIPE_BUF];
+		parse_command(buf, arguments);
+
+		fflush(stdout);
+		k = fork();
+		if (k == 0)
 		{
-			command_idx = 0;
-			while (buf_idx < command_length && buf[buf_idx] != '\n')
-				if (buf[buf_idx] == '\0') // ignore '\0' as we use '\n' instead
-					buf_idx++;
-				else
-					command[command_idx++] = buf[buf_idx++];
+			// child code
+			int result = execvp(arguments[0], arguments);
 
-			buf_idx++; // increase buf_idx to ignore '\n'
-
-			if (command_idx == 0) // empty command
-				continue;
-
-			// close command string as we ignore it before
-			command[command_idx] = '\0';
-
-			// print prompt
-			fprintf(stdout, "[%d]$ ", getpid());
-
-			char *arguments[PIPE_BUF];
-			parse_command(command, arguments);
-
-			fflush(stdout);
-			k = fork();
-			if (k == 0)
+			if (result == -1) // if execution failed, terminate child
 			{
-				// child code
-				int result = execvp(arguments[0], arguments);
-
-				if (result == -1) // if execution failed, terminate child
-				{
-					fprintf(stderr, "Command not found: %s\n", command);
-					exit(EXIT_FAILURE);
-				}
+				fprintf(stderr, "Command not found: %s\n", command);
+				exit(EXIT_FAILURE);
 			}
-			else
-			{
-				// parent code
-				waitpid(k, &status, 0);
-			}
+		}
+		else
+		{
+			// parent code
+			waitpid(k, &status, 0);
 		}
 	}
 
@@ -92,6 +76,8 @@ void signal_handler(int _)
 
 int main()
 {
+	signal(SIGINT, signal_handler);
+
 	if (mkfifo(SERVER_FIFO_NAME, S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH) == -1)
 		return -1;
 	fd = open(SERVER_FIFO_NAME, O_RDONLY);
@@ -101,8 +87,6 @@ int main()
 		unlink(SERVER_FIFO_NAME);
 		return -1;
 	}
-
-	signal(SIGINT, signal_handler);
 
 	int status = start_server();
 
