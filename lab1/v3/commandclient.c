@@ -8,6 +8,8 @@
 #include "fifo_info.h"
 #include "../lib/fifo_info.h"
 
+#define COMMAND_SIZE PIPE_BUF * 2
+
 int client_fifo_fd;
 char client_fifo_name[100];
 
@@ -33,11 +35,16 @@ int start_client()
             fprintf(stderr, "Cannot open FIFO: %s\n", SERVER_FIFO_NAME);
             return -1;
         }
-        char command[PIPE_BUF * 2];
+        char command[COMMAND_SIZE];
         fprintf(stdout, "> ");
         if (!fgets(command, sizeof(command), stdin))
             break;
-        size_t len = strlen(command) + 1;
+
+        char prefixed_command[COMMAND_SIZE + 100];
+        snprintf(prefixed_command, sizeof(prefixed_command), "%d\n%s", getpid(), command);
+
+        size_t len = strlen(prefixed_command) + 1;
+
         if (len * sizeof(char) <= PIPE_BUF)
             write(server_fifo_fd, command, len);
         else
