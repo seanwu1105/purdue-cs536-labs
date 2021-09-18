@@ -2,7 +2,7 @@ name: build
 on: [push, pull_request]
 
 jobs:
-  lab1/v1:
+  lab1_v1:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -14,7 +14,7 @@ jobs:
       - name: Make
         run: make
 
-  lab1/v2:
+  lab1_v2:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,7 +26,7 @@ jobs:
       - name: Make
         run: make
 
-  lab1/v3:
+  lab1_v3:
     runs-on: ubuntu-latest
     defaults:
       run:
