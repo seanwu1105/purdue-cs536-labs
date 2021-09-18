@@ -60,7 +60,7 @@ int start_server()
 			char *arguments[PIPE_BUF];
 			parse_command(command, arguments);
 
-			fflush(stdout);
+			fflush(stdout); // flush stdout before forking
 			k = fork();
 			if (k == 0)
 			{

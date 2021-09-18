@@ -21,7 +21,7 @@ int main()
             break;
         size_t len = strlen(command) + 1;
         if (len * sizeof(char) <= PIPE_BUF)
-            write(fd, command, len);
+            write(fd, command, len * sizeof(char));
         else
             fprintf(stderr, "Command length too long.\n");
         close(fd);

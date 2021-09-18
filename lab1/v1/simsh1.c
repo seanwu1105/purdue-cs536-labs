@@ -32,7 +32,7 @@ int main()
 		char *arguments[BUFFER_LEN];
 		parse_command(buf, arguments);
 
-		fflush(stdout);
+		fflush(stdout); // flush stdout before forking
 		k = fork();
 		if (k == 0)
 		{

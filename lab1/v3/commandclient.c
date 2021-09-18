@@ -46,7 +46,7 @@ int start_client()
         size_t len = strlen(prefixed_command) + 1;
 
         if (len * sizeof(char) <= PIPE_BUF)
-            write(server_fifo_fd, command, len);
+            write(server_fifo_fd, prefixed_command, len * sizeof(char));
         else
             fprintf(stderr, "Command length too long.\n");
         close(server_fifo_fd);
@@ -68,7 +68,7 @@ int main()
 
     if (mkfifo(client_fifo_name, S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH) == -1)
         return -1;
-    client_fifo_fd = open(client_fifo_name, O_RDONLY);
+    client_fifo_fd = open(client_fifo_name, O_RDWR);
     if (client_fifo_fd == -1)
     {
         close(client_fifo_fd);

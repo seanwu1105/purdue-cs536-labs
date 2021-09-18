@@ -37,15 +37,16 @@ int start_server()
 		// print prompt
 		fprintf(stdout, "[%d]$ ", getpid());
 
-		printf("%s", buf);
-
 		char *pid_str = strtok(buf, "\n");
 		char *command = strtok(NULL, "\0");
 
-		char *arguments[PIPE_BUF];
-		parse_command(buf, arguments);
+		if (!pid_str || !command)
+			return -1;
 
-		fflush(stdout);
+		char *arguments[PIPE_BUF];
+		parse_command(command, arguments);
+
+		fflush(stdout); // flush stdout before forking
 		k = fork();
 		if (k == 0)
 		{
