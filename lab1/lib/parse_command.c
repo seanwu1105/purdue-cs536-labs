@@ -3,7 +3,7 @@
 #include <string.h>
 #include "parse_command.h"
 
-#define ARGUMENT_SIZE 100
+#define ARGUMENT_SIZE 4096
 
 typedef enum
 {

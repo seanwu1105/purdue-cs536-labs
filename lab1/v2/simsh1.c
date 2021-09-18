@@ -11,8 +11,6 @@
 #include "../lib/parse_command.h"
 #include "../lib/fifo_info.h"
 
-#define BUFFER_SIZE 100
-
 int fd;
 
 void tear_down()
@@ -24,20 +22,20 @@ void tear_down()
 int start_server()
 {
 	pid_t k;
-	char buf[BUFFER_SIZE];
+	char buf[PIPE_BUF];
 	int status;
 
 	while (1)
 	{
 		// read command from FIFO
-		ssize_t command_length = read(fd, buf, BUFFER_SIZE * sizeof(char));
+		ssize_t command_length = read(fd, buf, PIPE_BUF * sizeof(char));
 		if (command_length == -1)
 			return -1;
 		else if (command_length == 0) // EOF
 			continue;
 
 		// split commands from buf with '\n' as delimiter
-		char command[BUFFER_SIZE];
+		char command[PIPE_BUF];
 		size_t buf_idx = 0, command_idx = 0;
 		while (buf_idx < command_length)
 		{
@@ -59,7 +57,7 @@ int start_server()
 			// print prompt
 			fprintf(stdout, "[%d]$ ", getpid());
 
-			char *arguments[BUFFER_SIZE];
+			char *arguments[PIPE_BUF];
 			parse_command(command, arguments);
 
 			fflush(stdout);

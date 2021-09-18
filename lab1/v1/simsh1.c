@@ -7,7 +7,7 @@
 #include <string.h>
 #include "../lib/parse_command.h"
 
-#define BUFFER_LEN 1000
+#define BUFFER_LEN 4096
 
 int main()
 {
@@ -22,7 +22,7 @@ int main()
 		fprintf(stdout, "[%d]$ ", getpid());
 
 		// read command from stdin
-		if (!fgets(buf, 100, stdin))
+		if (!fgets(buf, BUFFER_LEN, stdin))
 			break;
 
 		len = strlen(buf);
