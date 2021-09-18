@@ -11,11 +11,11 @@
 #include "../lib/parse_command.h"
 #include "../lib/fifo_info.h"
 
-int fd;
+int server_fifo_fd;
 
 void tear_down()
 {
-	close(fd);
+	close(server_fifo_fd);
 	unlink(SERVER_FIFO_NAME);
 }
 
@@ -28,10 +28,10 @@ int start_server()
 	while (1)
 	{
 		// read command from FIFO
-		ssize_t command_length = read(fd, buf, PIPE_BUF * sizeof(char));
-		if (command_length == -1)
+		ssize_t command_len = read(server_fifo_fd, buf, PIPE_BUF);
+		if (command_len == -1)
 			return -1;
-		else if (command_length == 0) // EOF
+		else if (command_len == 0) // EOF
 			continue;
 
 		// print prompt
@@ -51,6 +51,18 @@ int start_server()
 		if (k == 0)
 		{
 			// child code
+
+			// open client FIFO according to the parsed pid
+			char client_fifo_filename[100] = CLIENT_FIFO_NAME_PREFIX;
+			strcat(client_fifo_filename, pid_str);
+			int client_fifo_fd = open(client_fifo_filename, O_WRONLY);
+			if (client_fifo_fd == -1)
+				return -1;
+
+			// redirect stdout to client FIFO file descriptor
+			if (dup2(client_fifo_fd, STDOUT_FILENO) == -1)
+				exit(EXIT_FAILURE);
+
 			int result = execvp(arguments[0], arguments);
 
 			if (result == -1) // if execution failed, terminate child
@@ -81,10 +93,9 @@ int main()
 
 	if (mkfifo(SERVER_FIFO_NAME, S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH) == -1)
 		return -1;
-	fd = open(SERVER_FIFO_NAME, O_RDONLY);
-	if (fd == -1)
+	server_fifo_fd = open(SERVER_FIFO_NAME, O_RDONLY);
+	if (server_fifo_fd == -1)
 	{
-		close(fd);
 		unlink(SERVER_FIFO_NAME);
 		return -1;
 	}

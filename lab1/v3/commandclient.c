@@ -10,12 +10,10 @@
 
 #define COMMAND_SIZE PIPE_BUF * 2
 
-int client_fifo_fd;
 char client_fifo_name[100];
 
 void tear_down()
 {
-    close(client_fifo_fd);
     unlink(client_fifo_name);
 }
 
@@ -29,12 +27,7 @@ int start_client()
 {
     while (1)
     {
-        int server_fifo_fd = open(SERVER_FIFO_NAME, O_WRONLY);
-        if (server_fifo_fd == -1)
-        {
-            fprintf(stderr, "Cannot open FIFO: %s\n", SERVER_FIFO_NAME);
-            return -1;
-        }
+        // send command to server
         char command[COMMAND_SIZE];
         fprintf(stdout, "> ");
         if (!fgets(command, sizeof(command), stdin))
@@ -45,11 +38,33 @@ int start_client()
 
         size_t len = strlen(prefixed_command) + 1;
 
+        int server_fifo_fd = open(SERVER_FIFO_NAME, O_WRONLY);
+        if (server_fifo_fd == -1)
+        {
+            fprintf(stderr, "Cannot open FIFO: %s\n", SERVER_FIFO_NAME);
+            return -1;
+        }
+
         if (len * sizeof(char) <= PIPE_BUF)
             write(server_fifo_fd, prefixed_command, len * sizeof(char));
         else
             fprintf(stderr, "Command length too long.\n");
         close(server_fifo_fd);
+
+        // read result from server
+        int client_fifo_fd = open(client_fifo_name, O_RDONLY);
+        if (client_fifo_fd == -1)
+            return -1;
+
+        char buf[PIPE_BUF];
+        ssize_t result_len = read(client_fifo_fd, buf, PIPE_BUF);
+        if (result_len == -1)
+            return -1;
+        if (result_len == 0)
+            continue;
+        buf[result_len] = '\0';
+
+        fprintf(stdout, "%s", buf);
     }
     return 0;
 }
@@ -68,13 +83,6 @@ int main()
 
     if (mkfifo(client_fifo_name, S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH) == -1)
         return -1;
-    client_fifo_fd = open(client_fifo_name, O_RDWR);
-    if (client_fifo_fd == -1)
-    {
-        close(client_fifo_fd);
-        unlink(client_fifo_name);
-        return -1;
-    }
 
     int status = start_client();
 

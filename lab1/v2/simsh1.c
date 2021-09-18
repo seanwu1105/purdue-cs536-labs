@@ -28,19 +28,19 @@ int start_server()
 	while (1)
 	{
 		// read command from FIFO
-		ssize_t command_length = read(fd, buf, PIPE_BUF * sizeof(char));
-		if (command_length == -1)
+		ssize_t command_len = read(fd, buf, PIPE_BUF);
+		if (command_len == -1)
 			return -1;
-		else if (command_length == 0) // EOF
+		else if (command_len == 0) // EOF
 			continue;
 
 		// split commands from buf with '\n' as delimiter
 		char command[PIPE_BUF];
 		size_t buf_idx = 0, command_idx = 0;
-		while (buf_idx < command_length)
+		while (buf_idx < command_len)
 		{
 			command_idx = 0;
-			while (buf_idx < command_length && buf[buf_idx] != '\n')
+			while (buf_idx < command_len && buf[buf_idx] != '\n')
 				if (buf[buf_idx] == '\0') // ignore '\0' as we use '\n' instead
 					buf_idx++;
 				else
@@ -99,7 +99,6 @@ int main()
 	fd = open(SERVER_FIFO_NAME, O_RDONLY);
 	if (fd == -1)
 	{
-		close(fd);
 		unlink(SERVER_FIFO_NAME);
 		return -1;
 	}
