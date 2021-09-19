@@ -1,20 +1,22 @@
 # Problem 3 [70 pts]
 
+## Instruction
+
 This is an extension of Problem 2 where instead of showing the output of the
 command executed by the server on `stdout` of its associated window, the output
 is sent to the client who submitted the request. The client then outputs the
 response from the server on its `stdout` in its associated window. To facilitate
-communication from server back to client, a client sets up its own FIFO before
-sending a request to the server. The name of the FIFO is `cfifo<clientpid>`
-where `<clientpid>` is the `pid` of the client. For example, if a client has
-`pid` `22225` then its FIFO is named `client22225`. Since the server needs to
-know the client's pid to open the client's FIFO and write the response, we will
-change the format of the request message so that a client's message starts with
-its pid followed by newline which is then followed the command and ends with
-newline. For example, if the client with `pid` `22225` is requesting that
-`ls -l -a` be executed by the server, the message would be the five characters
-of string `22225` followed by `\n` followed by the eight characters of string
-`ls -l -a` followed by `\n`.
+communication from the server back to the client, a client sets up its own FIFO
+before sending a request to the server. The name of the FIFO is
+`cfifo<clientpid>` where `<clientpid>` is the `pid` of the client. For example,
+if a client has `pid` `22225` then its FIFO is named `client22225`. Since the
+server needs to know the client's pid to open the client's FIFO and write the
+response, we will change the format of the request message so that a client's
+message starts with its pid followed by newline which is then followed the
+command and ends with newline. For example, if the client with `pid` `22225` is
+requesting that `ls -l -a` be executed by the server, the message would be the
+five characters of string `22225` followed by `\n` followed by the eight
+characters of string `ls -l -a` followed by `\n`.
 
 In the above example, when a child process of the server process calls
 `execvp()` to run the legacy app `/bin/ls` with command-line arguments `-l` and
@@ -88,9 +90,9 @@ example:
 
 ## Blocking Server Behavior
 
-Note that the server will be blocked when there is a task has not competed. You
-can test this behavior with the `./test/long.py` file simulating a long-running
-task.
+Note that the server will be blocked when there is a task that has not competed.
+You can test this behavior with the `./test/long.py` file simulating a
+long-running task.
 
 For example,
 
@@ -131,5 +133,6 @@ Store the sharing information about the FIFO.
 
 ### `parse_command.c`
 
-Parse the user input command from string (`char*`) into argv (`char * const *`)
-for `execvp`. Able to handle double quotes and escaped characters.
+Parse the user input command from a string (`char*`) into argv
+(`char * const *`) for `execvp`. Able to handle double quotes and escaped
+characters.

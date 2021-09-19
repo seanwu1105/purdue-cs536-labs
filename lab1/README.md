@@ -14,3 +14,18 @@ policy specified on the course home page.
 ## Reading
 
 Read chapter 1 from Peterson & Davie (textbook).
+
+## Turn-in instructions
+
+Electronic turn-in instructions:
+
+We will use `turnin` to manage lab assignment submissions. Go to the parent
+directory of the directory `lab1/` where you deposited the submissions and type
+the command
+
+```sh
+turnin -v -c cs536 -p lab1 lab1
+```
+
+This lab is individual effort. Please note the assignment submission policy
+specified on the course home page.

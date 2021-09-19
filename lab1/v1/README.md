@@ -1,5 +1,7 @@
 # Problem 1 [40 pts]
 
+## Instruction
+
 The directory
 
 `/homes/park/pub/cs536/lab1` (symbolic link currently pointing to
@@ -43,7 +45,7 @@ Start the server.
 ```
 
 Now, you can enter commands in the terminal running the `simsh1.bin` executable.
-For example, type `ls -la` in one of the client terminal. You should see the
+For example, type `ls -la` in one of the client terminals. You should see the
 execution result of the corresponding command showing on the terminal.
 
 To stop the server, send `SIGINT` with <kbd>ctrl</kbd> + <kbd>c</kbd> on Linux.
@@ -71,5 +73,6 @@ The source of `simsh1.bin`.
 
 ### `parse_command.c`
 
-Parse the user input command from string (`char*`) into argv (`char * const *`)
-for `execvp`. Able to handle double quotes and escaped characters.
+Parse the user input command from a string (`char*`) into argv
+(`char * const *`) for `execvp`. Able to handle double quotes and escaped
+characters.

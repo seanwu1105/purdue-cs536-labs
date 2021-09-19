@@ -1,16 +1,18 @@
 # Problem 2 [100 pts]
 
+## Instruction
+
 Create a subdirectory `v2/` under lab1. Modify your code, `simsh1.c`, so that
-instead of accepting client requests from stdin (i.e., human typing on keyboard
-in `v1/`) the request is communicated from a client process. The server process
-running commandserver.bin creates a FIFO (i.e., named pipe) to be used as a
-communication channel where clients can submit requests. After creating a FIFO,
-its name is saved in a text file `v2/serverfifo.dat` that a client can read to
-find the name of the FIFO. A client running `commandclient.bin` starts after the
-server process has started executing and created `serverfifo.dat`. If the client
-cannot access `serverfifo.dat`, it terminates after printing a suitable error
-message to `stderr`. When testing, run the server and client processes in
-separate windows for ease of observation.
+instead of accepting client requests from stdin (i.e., human typing on a
+keyboard in `v1/`) the request is communicated from a client process. The server
+process running commandserver.bin creates a FIFO (i.e., named pipe) to be used
+as a communication channel where clients can submit requests. After creating a
+FIFO, its name is saved in a text file `v2/serverfifo.dat` that a client can
+read to find the name of the FIFO. A client running `commandclient.bin` starts
+after the server process has started executing and created `serverfifo.dat`. If
+the client cannot access `serverfifo.dat`, it terminates after printing a
+suitable error message to `stderr`. When testing, run the server and client
+processes in separate windows for ease of observation.
 
 After finding the name of the server's FIFO, the client uses `open()` to open
 the FIFO and sends its request using `write()`. The client's request is provided
@@ -53,9 +55,9 @@ After the server is running, create new clients in new terminals.
 ```
 
 Now, you can enter commands in the new terminals running the `commandclient.bin`
-executable. For example, type `ls -la` in one of the client terminal. You should
-see the execution result of the corresponding command showing on the server
-terminal.
+executable. For example, type `ls -la` in one of the client terminals. You
+should see the execution result of the corresponding command showing on the
+server terminal.
 
 To stop the server or clients, send `SIGINT` with <kbd>ctrl</kbd> + <kbd>c</kbd>
 on Linux. Once the server has been stopped, clients cannot send commands. Doing
@@ -85,9 +87,9 @@ example:
 
 ## Blocking Server Behavior
 
-Note that the server will be blocked when there is a task has not competed. You
-can test this behavior with the `./test/long.py` file simulating a long-running
-task.
+Note that the server will be blocked when there is a task that has not competed.
+You can test this behavior with the `./test/long.py` file simulating a
+long-running task.
 
 For example,
 
@@ -117,7 +119,7 @@ only have one instance at a time in one directory.
 
 The source of `commandclient.bin`. The writer of the FIFO (`serverfifo.dat`)
 feeds commands expected to be read by `commandserver.bin`. Can have multiple
-instance at a time in one directory.
+instances at a time in one directory.
 
 ### `fifo_info.h`
 
@@ -125,5 +127,6 @@ Store the sharing information about the FIFO.
 
 ### `parse_command.c`
 
-Parse the user input command from string (`char*`) into argv (`char * const *`)
-for `execvp`. Able to handle double quotes and escaped characters.
+Parse the user input command from a string (`char*`) into argv
+(`char * const *`) for `execvp`. Able to handle double quotes and escaped
+characters.
