@@ -60,17 +60,15 @@ int start_client()
 
         char buf[PIPE_BUF];
         ssize_t result_len;
-        while (result_len = read(client_fifo_fd, buf, PIPE_BUF), result_len == 0)
-            ; // busy wait for the result from server
+        while (result_len = read(client_fifo_fd, buf, PIPE_BUF), result_len > 0)
+        {
+            buf[result_len] = '\0';
+            fprintf(stdout, "%s", buf);
+        }
 
         close(client_fifo_fd);
         if (result_len == -1)
             return -1;
-        if (result_len == 0)
-            continue;
-        buf[result_len] = '\0';
-
-        fprintf(stdout, "%s", buf);
     }
     return 0;
 }
