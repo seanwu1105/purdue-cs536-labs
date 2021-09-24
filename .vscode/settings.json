@@ -5,7 +5,9 @@
     "stdio.h": "c",
     "fcntl.h": "c",
     "fifo_info.h": "c",
-    "limits.h": "c"
+    "limits.h": "c",
+    "inet.h": "c",
+    "utils.h": "c"
   },
   "[json, jsonc, markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

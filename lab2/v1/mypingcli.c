@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include "utils.h"
 
 int parse_arg(int argc, char *argv[], struct addrinfo **server_info)
 {
@@ -85,8 +86,6 @@ int main(int argc, char *argv[])
     if (parse_arg(argc, argv, &server_info) == -1 || read_config("pingparam.dat", &config) == -1)
         return -1;
 
-    char ipstr[INET_ADDRSTRLEN];
-    inet_ntop(server_info->ai_family, &((struct sockaddr_in *)server_info->ai_addr)->sin_addr, ipstr, sizeof ipstr);
-    printf("%s\n", ipstr);
+    print_addrinfo(server_info);
     return 0;
 }
