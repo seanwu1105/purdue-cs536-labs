@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <errno.h>
+#include <unistd.h>
 #include "utils.h"
 
 int parse_arg(int argc, char *argv[], struct addrinfo **server_info)
@@ -16,8 +18,6 @@ int parse_arg(int argc, char *argv[], struct addrinfo **server_info)
     // const char *const client_ip = argv[1];
     const char *const server_ip = argv[2];
     const char *const server_port = argv[3];
-
-    printf("%s\n", server_ip);
 
     struct addrinfo hints;
     memset(&hints, 0, sizeof hints);
@@ -86,6 +86,14 @@ int main(int argc, char *argv[])
     if (parse_arg(argc, argv, &server_info) == -1 || read_config("pingparam.dat", &config) == -1)
         return -1;
 
-    print_addrinfo(server_info);
+    int sockfd = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
+    if (sockfd == -1)
+    {
+        perror("Error on socket creation");
+        return -1;
+    }
+    printf("%d\n", sockfd);
+
+    close(sockfd);
     return 0;
 }
