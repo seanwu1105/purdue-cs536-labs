@@ -7,15 +7,40 @@
 #include <errno.h>
 #include <unistd.h>
 #include "utils.h"
+#include "read_config.h"
+#include "message_codec.h"
 
-int parse_arg(int argc, char *argv[], struct addrinfo **server_info)
+#define REQUIRED_ARGC 4
+
+int ping(int sockfd, struct sockaddr *target_addr, int32_t id, uint8_t delay)
 {
-    if (argc < 4)
+    uint8_t message[5];
+    encode_message(id, delay, message);
+    if (sendto(sockfd, message, sizeof(message), 0, target_addr, sizeof(*target_addr)) == -1)
     {
-        fprintf(stderr, "Insufficient arguments.");
+        perror("sendto");
         return -1;
     }
-    // const char *const client_ip = argv[1];
+    return 0;
+}
+
+int run(int sockfd, struct sockaddr *target_addr, Config config)
+{
+    for (size_t i = 0; i < config.num_packages; i++)
+        if (ping(sockfd, target_addr, config.first_sequence_num + (int32_t)i, config.server_delay) == -1)
+            return -1;
+
+    return 0;
+}
+
+int parse_arg(int argc, char *argv[], struct addrinfo **client_info, struct addrinfo **server_info)
+{
+    if (argc < REQUIRED_ARGC)
+    {
+        fprintf(stderr, "insufficient arguments: expect %d\n", REQUIRED_ARGC);
+        return -1;
+    }
+    const char *const client_ip = argv[1];
     const char *const server_ip = argv[2];
     const char *const server_port = argv[3];
 
@@ -27,73 +52,42 @@ int parse_arg(int argc, char *argv[], struct addrinfo **server_info)
     int status;
     if ((status = getaddrinfo(server_ip, server_port, &hints, server_info)) != 0)
     {
-        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
+        fprintf(stderr, "getaddrinfo server: %s\n", gai_strerror(status));
         return -1;
     }
-    return 0;
-}
 
-typedef struct
-{
-    unsigned short num_packages; // 1 ~ 7
-    unsigned short time_out;     // 1 ~ 5
-    unsigned short server_delay; // 1 byte, 0 ~ 5 | 99
-    long first_sequence_num;     // 4 bytes
-} Config;
-
-int read_config(const char *const filename, Config *const config)
-{
-    FILE *file = fopen(filename, "r");
-    if (file == NULL)
+    if ((status = getaddrinfo(client_ip, "0", &hints, client_info)) != 0) // assign 0 to port number for automatic assignment
     {
-        fprintf(stderr, "Cannot open config.\n");
+        fprintf(stderr, "getaddrinfo client: %s\n", gai_strerror(status));
         return -1;
     }
-
-    char key;
-    char val[128];
-    while (fscanf(file, "%c=%127[^\n]%*c", &key, val) == 2)
-        switch (key)
-        {
-        case 'N':
-            config->num_packages = (unsigned short)strtoul(val, NULL, 0);
-            break;
-
-        case 'T':
-            config->time_out = (unsigned short)strtoul(val, NULL, 0);
-            break;
-
-        case 'D':
-            config->server_delay = (unsigned short)strtoul(val, NULL, 0);
-            break;
-
-        case 'S':
-            config->first_sequence_num = strtol(val, NULL, 0);
-            break;
-
-        default:
-            fprintf(stderr, "Unknown configuration key: %c\n", key);
-            return -1;
-        }
-
     return 0;
 }
 
 int main(int argc, char *argv[])
 {
     Config config = {};
+    struct addrinfo *client_info;
     struct addrinfo *server_info;
-    if (parse_arg(argc, argv, &server_info) == -1 || read_config("pingparam.dat", &config) == -1)
+    if (parse_arg(argc, argv, &client_info, &server_info) == -1 || read_config("pingparam.dat", &config) == -1)
         return -1;
 
     int sockfd = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
     if (sockfd == -1)
     {
-        perror("Error on socket creation");
+        perror("socket");
         return -1;
     }
-    printf("%d\n", sockfd);
 
+    if (bind(sockfd, client_info->ai_addr, client_info->ai_addrlen) == -1)
+    {
+        perror("bind");
+        return -1;
+    }
+
+    // ping
+
+    freeaddrinfo(server_info);
     close(sockfd);
     return 0;
 }
