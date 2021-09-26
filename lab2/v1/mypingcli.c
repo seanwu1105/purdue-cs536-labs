@@ -10,7 +10,7 @@
 
 int ping(int sockfd, struct sockaddr *target_addr, int32_t id, uint8_t delay)
 {
-    uint8_t message[5];
+    uint8_t message[MESSAGE_LEN];
     encode_message(id, delay, message);
     if (sendto(sockfd, message, sizeof(message), 0, target_addr, sizeof(*target_addr)) == -1)
     {
