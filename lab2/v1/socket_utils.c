@@ -14,7 +14,7 @@ int print_addrinfo(const struct addrinfo *const info)
 
     for (const struct addrinfo *p = info; p != NULL; p = p->ai_next)
     {
-        inet_ntop(p->ai_family, &((struct sockaddr_in *)p->ai_addr)->sin_addr, ipstr, sizeof ipstr);
+        inet_ntop(p->ai_family, &((struct sockaddr_in *)p->ai_addr)->sin_addr, ipstr, sizeof(ipstr));
         printf("IP address: %s\n", ipstr);
     }
     return 0;
@@ -23,7 +23,7 @@ int print_addrinfo(const struct addrinfo *const info)
 int build_addrinfo(struct addrinfo **info, const char *const ip, const char *const port)
 {
     struct addrinfo hints;
-    memset(&hints, 0, sizeof hints);
+    memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;      // IPv4
     hints.ai_socktype = SOCK_DGRAM; // UDP
 
