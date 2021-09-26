@@ -30,6 +30,8 @@ int run(int sockfd)
     decode_message(message, &id, &delay);
 
     printf("%d\t%hu\n", id, delay);
+
+    return 0;
 }
 
 int parse_arg(int argc, char *argv[], struct addrinfo **info)
