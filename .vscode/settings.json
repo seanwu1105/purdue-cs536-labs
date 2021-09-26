@@ -8,10 +8,13 @@
     "limits.h": "c",
     "inet.h": "c",
     "utils.h": "c",
-    "read_config.h": "c"
+    "read_config.h": "c",
+    "unistd.h": "c",
+    "socket.h": "c"
   },
   "[json, jsonc, markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "prettier.proseWrap": "always"
+  "prettier.proseWrap": "always",
+  "C_Cpp.clang_format_sortIncludes": true
 }

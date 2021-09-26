@@ -1,6 +1,6 @@
-#include <stdlib.h>
-#include <stdio.h>
 #include "read_config.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 int read_config(const char *const filename, Config *const config)
 {

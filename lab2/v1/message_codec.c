@@ -1,5 +1,5 @@
-#include <stdint.h>
 #include "message_codec.h"
+#include <stdint.h>
 
 // Encode message, whose length should be exactly 5 bytes.
 void encode_message(const int32_t id, const uint8_t delay, uint8_t *const message)
