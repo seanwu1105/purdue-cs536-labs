@@ -21,6 +21,7 @@ int ping(int sockfd, struct sockaddr *target_addr, int32_t id, uint8_t delay)
         perror("sendto");
         return -1;
     }
+    printf("sent\n");
     return 0;
 }
 
@@ -85,7 +86,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // ping
+    run(sockfd, server_info->ai_addr, config);
 
     freeaddrinfo(server_info);
     close(sockfd);
