@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int read_config(const char *const filename, Config *const config)
+int read_config(Config *const config)
 {
-    FILE *file = fopen(filename, "r");
+    FILE *file = fopen(CONFIG_FILENAME, "r");
     if (file == NULL)
     {
         fprintf(stderr, "cannot open config.\n");

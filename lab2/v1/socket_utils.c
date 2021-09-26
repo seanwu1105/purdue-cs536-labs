@@ -34,12 +34,12 @@ int build_addrinfo(struct addrinfo **info, const char *const ip, const char *con
     return status;
 }
 
-int connect_and_bind_first_usable_addr(const struct addrinfo *const target, const struct addrinfo *const self)
+int create_socket_with_first_usable_addr(const struct addrinfo *const info)
 {
     int fd;
     const struct addrinfo *p;
 
-    for (p = target; p != NULL; p = p->ai_next)
+    for (p = info; p != NULL; p = p->ai_next)
     {
         if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
         {
@@ -56,10 +56,16 @@ int connect_and_bind_first_usable_addr(const struct addrinfo *const target, cons
         return -1;
     }
 
-    for (p = self; p != NULL; p = p->ai_next)
+    return fd;
+}
+
+int bind_socket_with_first_usable_addr(const struct addrinfo *const info, int sockfd)
+{
+    const struct addrinfo *p;
+    for (p = info; p != NULL; p = p->ai_next)
     {
 
-        if (bind(fd, p->ai_addr, p->ai_addrlen) == -1)
+        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1)
         {
             perror("[attempt] bind");
             continue;
@@ -70,10 +76,8 @@ int connect_and_bind_first_usable_addr(const struct addrinfo *const target, cons
 
     if (p == NULL)
     {
-        close(fd);
         fprintf(stderr, "failed to bind socket.\n");
         return -1;
     }
-
-    return fd;
+    return 0;
 }

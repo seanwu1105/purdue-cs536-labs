@@ -55,12 +55,18 @@ int main(int argc, char *argv[])
     Config config = {};
     struct addrinfo *client_info;
     struct addrinfo *server_info;
-    if (parse_arg(argc, argv, &client_info, &server_info) != 0 || read_config("pingparam.dat", &config) == -1)
+    if (parse_arg(argc, argv, &client_info, &server_info) != 0 || read_config(&config) == -1)
         return -1;
 
-    int sockfd = connect_and_bind_first_usable_addr(server_info, client_info);
+    int sockfd = create_socket_with_first_usable_addr(server_info);
     if (sockfd == -1)
         return -1;
+
+    if (bind_socket_with_first_usable_addr(client_info, sockfd) == -1)
+    {
+        close(sockfd);
+        return -1;
+    }
 
     run(sockfd, server_info->ai_addr, config);
 

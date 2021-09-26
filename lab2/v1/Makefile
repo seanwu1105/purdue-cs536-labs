@@ -6,10 +6,10 @@ PROGS = mypingcli mypingsrv
 .PHONY: all
 all: $(PROGS)
 
-mypingcli: mypingcli.o read_config.o message_codec.o socket_utils.o
+mypingcli: mypingcli.o read_config.o socket_utils.o message_codec.o
 	$(CC) -o $@ $^
 
-mypingsrv: mypingsrv.c
+mypingsrv: mypingsrv.c read_config.o socket_utils.o message_codec.o
 	$(CC) -o $@ $^
 
 $(OBJECTS): %.o: %.c
