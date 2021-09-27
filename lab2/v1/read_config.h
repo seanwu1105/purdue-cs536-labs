@@ -8,7 +8,7 @@
 typedef struct
 {
     unsigned short num_packages; // 1 ~ 7
-    unsigned short time_out;     // 1 ~ 5
+    unsigned short timeout;      // 1 ~ 5
     uint8_t server_delay;        // 1 byte, 0 ~ 5 | 99
     int32_t first_sequence_num;  // 4 bytes
 } Config;

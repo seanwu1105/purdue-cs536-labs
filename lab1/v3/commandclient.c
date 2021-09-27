@@ -1,14 +1,14 @@
 // XXX: Delay reading on server busy.
 
-#include <stdio.h>
-#include <unistd.h>
+#include "../lib/fifo_info.h"
 #include <fcntl.h>
-#include <string.h>
 #include <limits.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
-#include "../lib/fifo_info.h"
+#include <unistd.h>
 
 #define COMMAND_SIZE PIPE_BUF * 2
 
@@ -73,7 +73,7 @@ int start_client()
     return 0;
 }
 
-void signal_handler(int _)
+static void signal_handler(int _)
 {
     tear_down();
     exit(EXIT_SUCCESS);

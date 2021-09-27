@@ -59,7 +59,7 @@ int create_socket_with_first_usable_addr(const struct addrinfo *const info)
     return fd;
 }
 
-int bind_socket_with_first_usable_addr(const struct addrinfo *const info, int sockfd)
+int bind_socket_with_first_usable_addr(const struct addrinfo *const info, const int sockfd)
 {
     const struct addrinfo *p;
     for (p = info; p != NULL; p = p->ai_next)

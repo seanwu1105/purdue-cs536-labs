@@ -1,15 +1,15 @@
 // Simple shell example using fork() and execlp().
 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <string.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <limits.h>
-#include "../lib/parse_command.h"
 #include "../lib/fifo_info.h"
+#include "../lib/parse_command.h"
+#include <fcntl.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 int fd;
 
@@ -84,7 +84,7 @@ int start_server()
 	return 0;
 }
 
-void signal_handler(int _)
+static void signal_handler(int _)
 {
 	tear_down();
 	exit(EXIT_SUCCESS);
