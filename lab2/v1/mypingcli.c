@@ -80,7 +80,7 @@ int ping(const struct sockaddr *target_addr, const int32_t id, const Config conf
         {
             if (errno == EINTR) // timeout
             {
-                printf("timeout\n");
+                fprintf(stdout, "timeout\n");
                 break;
             }
             return -1;

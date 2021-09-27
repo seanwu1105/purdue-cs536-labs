@@ -156,9 +156,8 @@ their roles. When sending and receiving 5-byte messages, note that the x86 Linux
 PCs in our labs use little endian byte ordering whereas Ethernet uses big endian
 byte ordering. Test your ping app to verify correctness.
 
-## Should Test
+## TODO
 
-- replace signal with sigaction
-- multiple clients on same machine
 - multiple clients on different machine
   - MID same and should not interfere
+- complete README

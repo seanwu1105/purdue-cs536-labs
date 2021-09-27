@@ -33,7 +33,6 @@ int feedback(const struct sockaddr target_addr, const int32_t id, const uint8_t 
         perror("sendto");
         return -1;
     }
-    printf("send back ping %d\n", id);
     return 0;
 }
 

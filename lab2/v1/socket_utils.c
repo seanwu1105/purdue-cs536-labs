@@ -15,7 +15,7 @@ int print_addrinfo(const struct addrinfo *const info)
     for (const struct addrinfo *p = info; p != NULL; p = p->ai_next)
     {
         inet_ntop(p->ai_family, &((struct sockaddr_in *)p->ai_addr)->sin_addr, ipstr, sizeof(ipstr));
-        printf("IP address: %s\n", ipstr);
+        fprintf(stdout, "IP address: %s\n", ipstr);
     }
     return 0;
 }
