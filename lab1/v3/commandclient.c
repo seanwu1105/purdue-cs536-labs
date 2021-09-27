@@ -1,5 +1,3 @@
-// XXX: Delay reading on server busy.
-
 #include "../lib/fifo_info.h"
 #include <fcntl.h>
 #include <limits.h>
@@ -14,10 +12,7 @@
 
 char client_fifo_name[100];
 
-void tear_down()
-{
-    unlink(client_fifo_name);
-}
+void tear_down() { unlink(client_fifo_name); }
 
 static void sigint_handler(int _)
 {
@@ -38,11 +33,11 @@ int start_client()
         // send command to server
         char command[COMMAND_SIZE];
         fprintf(stdout, "> ");
-        if (!fgets(command, sizeof(command), stdin))
-            break;
+        if (!fgets(command, sizeof(command), stdin)) break;
 
         char prefixed_command[COMMAND_SIZE + 100];
-        snprintf(prefixed_command, sizeof(prefixed_command), "%d\n%s", getpid(), command);
+        snprintf(prefixed_command, sizeof(prefixed_command), "%d\n%s", getpid(),
+                 command);
 
         size_t len = strlen(prefixed_command) + 1;
 
@@ -61,8 +56,7 @@ int start_client()
 
         // read result from server
         int client_fifo_fd = open(client_fifo_name, O_RDONLY);
-        if (client_fifo_fd == -1)
-            return -1;
+        if (client_fifo_fd == -1) return -1;
 
         char buf[PIPE_BUF];
         ssize_t result_len;
@@ -73,8 +67,7 @@ int start_client()
         }
 
         close(client_fifo_fd);
-        if (result_len == -1)
-            return -1;
+        if (result_len == -1) return -1;
     }
     return 0;
 }

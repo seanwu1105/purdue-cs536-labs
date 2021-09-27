@@ -11,10 +11,7 @@
 
 int sockfd;
 
-static void tear_down()
-{
-    close(sockfd);
-}
+static void tear_down() { close(sockfd); }
 
 static void sigint_handler(int _)
 {
@@ -22,13 +19,15 @@ static void sigint_handler(int _)
     exit(EXIT_SUCCESS);
 }
 
-int feedback(const struct sockaddr target_addr, const int32_t id, const uint8_t delay)
+int feedback(const struct sockaddr target_addr, const int32_t id,
+             const uint8_t delay)
 {
     sleep(delay);
 
     uint8_t message[MESSAGE_LEN];
     encode_message(id, delay, message);
-    if (sendto(sockfd, message, MESSAGE_LEN, 0, &target_addr, sizeof(target_addr)) < 0)
+    if (sendto(sockfd, message, MESSAGE_LEN, 0, &target_addr,
+               sizeof(target_addr)) < 0)
     {
         perror("sendto");
         return -1;
@@ -44,7 +43,9 @@ int run()
 
     while (1)
     {
-        ssize_t message_len = recvfrom(sockfd, message, sizeof(message), 0, &originating_addr, &originating_addr_len);
+        ssize_t message_len =
+            recvfrom(sockfd, message, sizeof(message), 0, &originating_addr,
+                     &originating_addr_len);
 
         if (message_len == -1)
         {
@@ -52,17 +53,14 @@ int run()
             return -1;
         }
 
-        if (message_len == 0)
-            continue;
+        if (message_len == 0) continue;
 
         int32_t id;
         uint8_t delay;
         decode_message(message, &id, &delay);
 
-        if (delay == 99)
-            return 0;
-        if (delay < 0 || delay > 5)
-            continue;
+        if (delay == 99) return 0;
+        if (delay < 0 || delay > 5) continue;
         fflush(stdout);
         pid_t pid = fork();
         if (pid == 0) // child process
@@ -83,8 +81,7 @@ int parse_arg(int argc, char *argv[], struct addrinfo **info)
     const char *const port = argv[2];
 
     int status;
-    if ((status = build_addrinfo(info, ip, port)) != 0)
-        return status;
+    if ((status = build_addrinfo(info, ip, port)) != 0) return status;
     return 0;
 }
 
@@ -94,12 +91,10 @@ int main(int argc, char *argv[])
     sigaction(SIGINT, &sigint_action, NULL);
 
     struct addrinfo *info;
-    if (parse_arg(argc, argv, &info) != 0)
-        return -1;
+    if (parse_arg(argc, argv, &info) != 0) return -1;
 
     sockfd = create_socket_with_first_usable_addr(info);
-    if (sockfd == -1)
-        return -1;
+    if (sockfd == -1) return -1;
 
     if (bind_socket_with_first_usable_addr(info, sockfd) == -1)
     {

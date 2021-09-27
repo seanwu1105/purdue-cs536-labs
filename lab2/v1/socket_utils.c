@@ -14,13 +14,15 @@ int print_addrinfo(const struct addrinfo *const info)
 
     for (const struct addrinfo *p = info; p != NULL; p = p->ai_next)
     {
-        inet_ntop(p->ai_family, &((struct sockaddr_in *)p->ai_addr)->sin_addr, ipstr, sizeof(ipstr));
+        inet_ntop(p->ai_family, &((struct sockaddr_in *)p->ai_addr)->sin_addr,
+                  ipstr, sizeof(ipstr));
         fprintf(stdout, "IP address: %s\n", ipstr);
     }
     return 0;
 }
 
-int build_addrinfo(struct addrinfo **info, const char *const ip, const char *const port)
+int build_addrinfo(struct addrinfo **info, const char *const ip,
+                   const char *const port)
 {
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -59,7 +61,8 @@ int create_socket_with_first_usable_addr(const struct addrinfo *const info)
     return fd;
 }
 
-int bind_socket_with_first_usable_addr(const struct addrinfo *const info, const int sockfd)
+int bind_socket_with_first_usable_addr(const struct addrinfo *const info,
+                                       const int sockfd)
 {
     const struct addrinfo *p;
     for (p = info; p != NULL; p = p->ai_next)

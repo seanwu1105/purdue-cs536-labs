@@ -161,3 +161,4 @@ byte ordering. Test your ping app to verify correctness.
 - multiple clients on different machine
   - MID same and should not interfere
 - complete README
+- remove unnecessary printf in v1

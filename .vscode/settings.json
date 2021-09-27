@@ -15,6 +15,5 @@
   "[json, jsonc, markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "prettier.proseWrap": "always",
-  "C_Cpp.clang_format_sortIncludes": true
+  "prettier.proseWrap": "always"
 }

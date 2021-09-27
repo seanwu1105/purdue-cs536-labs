@@ -1,9 +1,9 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <string.h>
-#include <limits.h>
 #include "../lib/fifo_info.h"
+#include <fcntl.h>
+#include <limits.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 int main()
 {
@@ -17,8 +17,7 @@ int main()
         }
         char command[PIPE_BUF * 2];
         fprintf(stdout, "> ");
-        if (!fgets(command, sizeof(command), stdin))
-            break;
+        if (!fgets(command, sizeof(command), stdin)) break;
         size_t len = strlen(command) + 1;
         if (len * sizeof(char) <= PIPE_BUF)
             write(fd, command, len * sizeof(char));

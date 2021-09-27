@@ -13,10 +13,7 @@
 
 int sockfd;
 
-void tear_down()
-{
-    close(sockfd);
-}
+void tear_down() { close(sockfd); }
 
 static void sigint_handler(int _)
 {
@@ -24,16 +21,15 @@ static void sigint_handler(int _)
     exit(EXIT_SUCCESS);
 }
 
-static void sigalrm_handler(int _)
-{
-    return;
-}
+static void sigalrm_handler(int _) { return; }
 
-int send_pinging(const struct sockaddr *target_addr, const int32_t id, const uint8_t delay)
+int send_pinging(const struct sockaddr *target_addr, const int32_t id,
+                 const uint8_t delay)
 {
     uint8_t message[MESSAGE_LEN];
     encode_message(id, delay, message);
-    if (sendto(sockfd, message, sizeof(message), 0, target_addr, sizeof(*target_addr)) == -1)
+    if (sendto(sockfd, message, sizeof(message), 0, target_addr,
+               sizeof(*target_addr)) == -1)
     {
         perror("sendto");
         return -1;
@@ -45,32 +41,31 @@ int receive_feedback(int32_t *const id)
 {
     uint8_t message[MESSAGE_LEN];
 
-    ssize_t message_len = recvfrom(sockfd, message, sizeof(message), 0, NULL, NULL);
+    ssize_t message_len =
+        recvfrom(sockfd, message, sizeof(message), 0, NULL, NULL);
 
     if (message_len == -1)
     {
-        if (errno != EINTR)
-            perror("recvfrom");
+        if (errno != EINTR) perror("recvfrom");
         return -1;
     }
 
-    if (message_len == 0)
-        return -2;
+    if (message_len == 0) return -2;
 
     uint8_t delay;
     decode_message(message, id, &delay);
     return 0;
 }
 
-int ping(const struct sockaddr *target_addr, const int32_t id, const Config config)
+int ping(const struct sockaddr *target_addr, const int32_t id,
+         const Config config)
 {
     struct timeval start_time;
     gettimeofday(&start_time, NULL);
 
     fprintf(stdout, "send MID: %d\t", id);
     fflush(stdout);
-    if (send_pinging(target_addr, id, config.server_delay) == -1)
-        return -1;
+    if (send_pinging(target_addr, id, config.server_delay) == -1) return -1;
 
     int32_t feedback_id;
     alarm(config.timeout); // start timeout timer
@@ -90,7 +85,9 @@ int ping(const struct sockaddr *target_addr, const int32_t id, const Config conf
             alarm(0); // cancel timeout timer
             struct timeval end_time;
             gettimeofday(&end_time, NULL);
-            fprintf(stdout, "RTT: %ld\n", (end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000);
+            fprintf(stdout, "RTT: %ld\n",
+                    (end_time.tv_sec - start_time.tv_sec) * 1000 +
+                        (end_time.tv_usec - start_time.tv_usec) / 1000);
             break;
         }
     }
@@ -101,13 +98,15 @@ int ping(const struct sockaddr *target_addr, const int32_t id, const Config conf
 int run(const struct sockaddr *target_addr, const Config config)
 {
     for (size_t i = 0; i < config.num_packages; i++)
-        if (ping(target_addr, config.first_sequence_num + (int32_t)i, config) == -1)
+        if (ping(target_addr, config.first_sequence_num + (int32_t)i, config) ==
+            -1)
             return -1;
 
     return 0;
 }
 
-int parse_arg(int argc, char *argv[], struct addrinfo **client_info, struct addrinfo **server_info)
+int parse_arg(int argc, char *argv[], struct addrinfo **client_info,
+              struct addrinfo **server_info)
 {
     if (argc < REQUIRED_ARGC)
     {
@@ -137,12 +136,12 @@ int main(int argc, char *argv[])
     Config config = {};
     struct addrinfo *client_info;
     struct addrinfo *server_info;
-    if (parse_arg(argc, argv, &client_info, &server_info) != 0 || read_config(&config) == -1)
+    if (parse_arg(argc, argv, &client_info, &server_info) != 0 ||
+        read_config(&config) == -1)
         return -1;
 
     sockfd = create_socket_with_first_usable_addr(server_info);
-    if (sockfd == -1)
-        return -1;
+    if (sockfd == -1) return -1;
 
     if (bind_socket_with_first_usable_addr(client_info, sockfd) == -1)
     {
