@@ -1,6 +1,7 @@
 #include "message_codec.h"
 #include "socket_utils.h"
 #include <netdb.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -9,6 +10,17 @@
 #define REQUIRED_ARGC 3
 
 int sockfd;
+
+static void tear_down()
+{
+    close(sockfd);
+}
+
+static void sigint_handler(int _)
+{
+    tear_down();
+    exit(EXIT_SUCCESS);
+}
 
 int feedback(const struct sockaddr target_addr, const int32_t id, const uint8_t delay)
 {
@@ -48,19 +60,14 @@ int run()
         uint8_t delay;
         decode_message(message, &id, &delay);
 
-        printf("Received: id=%d, delay=%d\n", id, delay);
-
         if (delay == 99)
             return 0;
         if (delay < 0 || delay > 5)
             continue;
         fflush(stdout);
         pid_t pid = fork();
-        if (pid == 0)
-        {
-            // child process
+        if (pid == 0) // child process
             feedback(originating_addr, id, delay);
-        }
     }
 
     return 0;
@@ -82,20 +89,10 @@ int parse_arg(int argc, char *argv[], struct addrinfo **info)
     return 0;
 }
 
-void tear_down()
-{
-    close(sockfd);
-}
-
-void signal_handler(int _)
-{
-    tear_down();
-    exit(EXIT_SUCCESS);
-}
-
 int main(int argc, char *argv[])
 {
-    signal(SIGINT, signal_handler);
+    struct sigaction sigint_action = {.sa_handler = sigint_handler};
+    sigaction(SIGINT, &sigint_action, NULL);
 
     struct addrinfo *info;
     if (parse_arg(argc, argv, &info) != 0)

@@ -4,6 +4,7 @@
 #include "../lib/parse_command.h"
 #include <fcntl.h>
 #include <limits.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +18,12 @@ void tear_down()
 {
 	close(fd);
 	unlink(SERVER_FIFO_NAME);
+}
+
+static void sigint_handler(int _)
+{
+	tear_down();
+	exit(EXIT_SUCCESS);
 }
 
 int start_server()
@@ -84,15 +91,10 @@ int start_server()
 	return 0;
 }
 
-static void signal_handler(int _)
-{
-	tear_down();
-	exit(EXIT_SUCCESS);
-}
-
 int main()
 {
-	signal(SIGINT, signal_handler);
+	struct sigaction sigint_action = {.sa_handler = sigint_handler};
+	sigaction(SIGINT, &sigint_action, NULL);
 
 	if (mkfifo(SERVER_FIFO_NAME, S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH) == -1)
 		return -1;

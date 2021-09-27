@@ -19,6 +19,12 @@ void tear_down()
     unlink(client_fifo_name);
 }
 
+static void sigint_handler(int _)
+{
+    tear_down();
+    exit(EXIT_SUCCESS);
+}
+
 void get_client_fifo_name(char *name, size_t size)
 {
     pid_t pid = getpid();
@@ -73,15 +79,10 @@ int start_client()
     return 0;
 }
 
-static void signal_handler(int _)
-{
-    tear_down();
-    exit(EXIT_SUCCESS);
-}
-
 int main()
 {
-    signal(SIGINT, signal_handler);
+    struct sigaction sigint_action = {.sa_handler = sigint_handler};
+    sigaction(SIGINT, &sigint_action, NULL);
 
     get_client_fifo_name(client_fifo_name, sizeof(client_fifo_name));
 
