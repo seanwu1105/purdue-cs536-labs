@@ -21,7 +21,7 @@ int read_config(Config *const config)
             break;
 
         case 'T':
-            config->time_out = (unsigned short)strtoul(val, NULL, 0);
+            config->timeout = (unsigned short)strtoul(val, NULL, 0);
             break;
 
         case 'D':
