@@ -20,10 +20,19 @@ int main()
         if (!fgets(command, sizeof(command), stdin)) break;
         size_t len = strlen(command) + 1;
         if (len * sizeof(char) <= PIPE_BUF)
-            write(fd, command, len * sizeof(char));
-        else
-            fprintf(stderr, "Command length too long.\n");
-        close(fd);
+            if (write(fd, command, len * sizeof(char)) == -1)
+            {
+                perror("write");
+                return -1;
+            }
+            else
+                fprintf(stderr, "Command length too long.\n");
+
+        if (close(fd) == -1)
+        {
+            perror("close");
+            return -1;
+        }
     }
 
     return 0;

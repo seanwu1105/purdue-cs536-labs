@@ -49,10 +49,20 @@ int start_client()
         }
 
         if (len * sizeof(char) <= PIPE_BUF)
-            write(server_fifo_fd, prefixed_command, len * sizeof(char));
-        else
-            fprintf(stderr, "Command length too long.\n");
-        close(server_fifo_fd);
+            if (write(server_fifo_fd, prefixed_command, len * sizeof(char)) ==
+                -1)
+            {
+                perror("write");
+                return -1;
+            }
+            else
+                fprintf(stderr, "Command length too long.\n");
+
+        if (close(server_fifo_fd) == -1)
+        {
+            perror("close");
+            return -1;
+        }
 
         // read result from server
         int client_fifo_fd = open(client_fifo_name, O_RDONLY);
@@ -60,13 +70,19 @@ int start_client()
 
         char buf[PIPE_BUF];
         ssize_t result_len;
-        while (result_len = read(client_fifo_fd, buf, PIPE_BUF), result_len > 0)
+        while (result_len = read(client_fifo_fd, buf, sizeof(buf) - 1),
+               result_len > 0)
         {
             buf[result_len] = '\0';
             fprintf(stdout, "%s", buf);
         }
 
-        close(client_fifo_fd);
+        if (close(client_fifo_fd) == -1)
+        {
+            perror("close");
+            return -1;
+        }
+
         if (result_len == -1) return -1;
     }
     return 0;

@@ -1,12 +1,9 @@
 // Simple shell example using fork() and execlp().
 
-#include <fcntl.h>
-#include <limits.h>
+#include "../lib/socket_utils.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 

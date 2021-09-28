@@ -12,12 +12,20 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-int fd;
+int fd = -1;
 
 void tear_down()
 {
-    close(fd);
-    unlink(SERVER_FIFO_NAME);
+    if (close(fd) == -1)
+    {
+        perror("close");
+        exit(EXIT_FAILURE);
+    }
+    if (unlink(SERVER_FIFO_NAME) == -1)
+    {
+        perror("unlink");
+        exit(EXIT_FAILURE);
+    }
 }
 
 static void sigint_handler(int _)

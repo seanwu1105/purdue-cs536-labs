@@ -12,12 +12,20 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-int server_fifo_fd;
+int server_fifo_fd = -1;
 
 void tear_down()
 {
-    close(server_fifo_fd);
-    unlink(SERVER_FIFO_NAME);
+    if (close(server_fifo_fd) == -1)
+    {
+        perror("close");
+        exit(EXIT_FAILURE);
+    }
+    if (unlink(SERVER_FIFO_NAME) == -1)
+    {
+        perror("unlink");
+        exit(EXIT_FAILURE);
+    }
 }
 
 int start_server()
@@ -45,7 +53,7 @@ int start_server()
         char *arguments[PIPE_BUF];
         parse_command(command, arguments);
 
-        int client_fifo_fd;
+        int client_fifo_fd = -1;
 
         fflush(stdout); // flush stdout before forking
         k = fork();

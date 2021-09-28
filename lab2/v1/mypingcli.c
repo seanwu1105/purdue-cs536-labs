@@ -1,6 +1,6 @@
+#include "../lib/socket_utils.h"
 #include "message_codec.h"
 #include "read_config.h"
-#include "socket_utils.h"
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -11,9 +11,16 @@
 
 #define REQUIRED_ARGC 4
 
-int sockfd;
+int sockfd = -1;
 
-void tear_down() { close(sockfd); }
+void tear_down()
+{
+    if (close(sockfd) == -1)
+    {
+        perror("close");
+        exit(EXIT_FAILURE);
+    }
+}
 
 static void sigint_handler(int _)
 {
@@ -140,12 +147,12 @@ int main(int argc, char *argv[])
         read_config(&config) == -1)
         return -1;
 
-    sockfd = create_socket_with_first_usable_addr(server_info);
-    if (sockfd == -1) return -1;
+    if ((sockfd = create_socket_with_first_usable_addr(server_info)) == -1)
+        return -1;
 
     if (bind_socket_with_first_usable_addr(client_info, sockfd) == -1)
     {
-        close(sockfd);
+        if (close(sockfd) == -1) perror("close");
         return -1;
     }
 

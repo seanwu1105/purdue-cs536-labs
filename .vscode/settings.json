@@ -10,7 +10,8 @@
     "utils.h": "c",
     "read_config.h": "c",
     "unistd.h": "c",
-    "socket.h": "c"
+    "socket.h": "c",
+    "signal.h": "c"
   },
   "[json, jsonc, markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

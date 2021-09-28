@@ -1,5 +1,5 @@
+#include "../lib/socket_utils.h"
 #include "message_codec.h"
-#include "socket_utils.h"
 #include <netdb.h>
 #include <signal.h>
 #include <stdio.h>
@@ -9,9 +9,16 @@
 
 #define REQUIRED_ARGC 3
 
-int sockfd;
+int sockfd = -1;
 
-static void tear_down() { close(sockfd); }
+static void tear_down()
+{
+    if (close(sockfd) == -1)
+    {
+        perror("close");
+        exit(EXIT_FAILURE);
+    }
+}
 
 static void sigint_handler(int _)
 {
@@ -93,18 +100,21 @@ int main(int argc, char *argv[])
     struct addrinfo *info;
     if (parse_arg(argc, argv, &info) != 0) return -1;
 
-    sockfd = create_socket_with_first_usable_addr(info);
-    if (sockfd == -1) return -1;
+    if ((sockfd = create_socket_with_first_usable_addr(info)) == -1) return -1;
 
     if (bind_socket_with_first_usable_addr(info, sockfd) == -1)
     {
-        close(sockfd);
+        if (close(sockfd) == -1) perror("close");
         return -1;
     }
 
-    run();
+    int status = run();
 
     freeaddrinfo(info);
-    close(sockfd);
-    return 0;
+    if (close(sockfd) == -1)
+    {
+        perror("close");
+        return -1;
+    }
+    return status;
 }

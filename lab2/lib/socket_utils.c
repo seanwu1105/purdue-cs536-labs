@@ -38,7 +38,7 @@ int build_addrinfo(struct addrinfo **info, const char *const ip,
 
 int create_socket_with_first_usable_addr(const struct addrinfo *const info)
 {
-    int fd;
+    int fd = -1;
     const struct addrinfo *p;
 
     for (p = info; p != NULL; p = p->ai_next)
