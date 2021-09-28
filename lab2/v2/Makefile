@@ -1,11 +1,11 @@
 CC = gcc
 CFLAGS = -g -Wall
-OBJECTS = rcommandserver.o rcommandclient.o parse_command.o
+OBJECTS = rcommandserver.o rcommandclient.o
 
 .PHONY: all
 all: rcommandserver.bin rcommandclient.bin
 
-rcommandserver.bin: rcommandserver.o parse_command.o
+rcommandserver.bin: rcommandserver.o
 	$(CC) -o $@ $^
 
 rcommandclient.bin: rcommandclient.o

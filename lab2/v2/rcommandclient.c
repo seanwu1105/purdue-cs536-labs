@@ -10,7 +10,7 @@
 #define COMMAND_SIZE PIPE_BUF * 2
 
 void tear_down()
-{ /* close socket */
+{ /**** close socket ****/
 }
 
 static void sigint_handler(int _)
@@ -28,39 +28,44 @@ int run()
         fprintf(stdout, "> ");
         if (!fgets(command, sizeof(command), stdin)) break;
 
-        char prefixed_command[COMMAND_SIZE + 100];
-        snprintf(prefixed_command, sizeof(prefixed_command), "%d\n%s", getpid(),
-                 command);
+        /**** create socket ****/
+        // char prefixed_command[COMMAND_SIZE + 100];
+        // snprintf(prefixed_command, sizeof(prefixed_command), "%d\n%s",
+        // getpid(),
+        //          command);
 
-        size_t len = strlen(prefixed_command) + 1;
+        // size_t len = strlen(prefixed_command) + 1;
 
-        int server_fifo_fd = open(SERVER_FIFO_NAME, O_WRONLY);
-        if (server_fifo_fd == -1)
-        {
-            fprintf(stderr, "Cannot open FIFO: %s\n", SERVER_FIFO_NAME);
-            return -1;
-        }
+        // int server_fifo_fd = open(SERVER_FIFO_NAME, O_WRONLY);
+        // if (server_fifo_fd == -1)
+        // {
+        //     fprintf(stderr, "Cannot open FIFO: %s\n", SERVER_FIFO_NAME);
+        //     return -1;
+        // }
 
-        if (len * sizeof(char) <= PIPE_BUF)
-            write(server_fifo_fd, prefixed_command, len * sizeof(char));
-        else
-            fprintf(stderr, "Command length too long.\n");
-        close(server_fifo_fd);
+        /**** write to server ****/
+        // if (len * sizeof(char) <= PIPE_BUF)
+        //     write(server_fifo_fd, prefixed_command, len * sizeof(char));
+        // else
+        //     fprintf(stderr, "Command length too long.\n");
+        // close(server_fifo_fd);
 
-        // read result from server
-        int client_fifo_fd = open(client_fifo_name, O_RDONLY);
-        if (client_fifo_fd == -1) return -1;
+        /**** read result from server ****/
+        // int client_fifo_fd = open(client_fifo_name, O_RDONLY);
+        // if (client_fifo_fd == -1) return -1;
 
-        char buf[PIPE_BUF];
-        ssize_t result_len;
-        while (result_len = read(client_fifo_fd, buf, PIPE_BUF), result_len > 0)
-        {
-            buf[result_len] = '\0';
-            fprintf(stdout, "%s", buf);
-        }
+        // char buf[PIPE_BUF];
+        // ssize_t result_len;
+        // while (result_len = read(client_fifo_fd, buf, PIPE_BUF), result_len >
+        // 0)
+        // {
+        //     buf[result_len] = '\0';
+        //     fprintf(stdout, "%s", buf);
+        // }
 
-        close(client_fifo_fd);
-        if (result_len == -1) return -1;
+        /**** close socket ****/
+        // close(client_fifo_fd);
+        // if (result_len == -1) return -1;
     }
     return 0;
 }
