@@ -42,6 +42,7 @@ int start_server()
             return -1;
         else if (command_len == 0) // EOF
             continue;              // busy wait for the new command from clients
+        buf[command_len] = '\0';
 
         char *pid_str = strtok(buf, "\n");
         char *command = strtok(NULL, "\0");
@@ -75,7 +76,7 @@ int start_server()
 
             if (result == -1) // if execution failed, terminate child
             {
-                fprintf(stderr, "Command not found: %s", command);
+                fprintf(stderr, "command not found: %s", command);
                 exit(EXIT_FAILURE);
             }
         }

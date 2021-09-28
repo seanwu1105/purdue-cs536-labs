@@ -1,82 +1,104 @@
 // Simple shell example using fork() and execlp().
 
 #include "../lib/socket_utils.h"
+#include "parse_addrinfo_arg.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
+#define BUFFER_SIZE 1024
+#define MAX_LISTEN_NUM 5
+
+int sockfd_half = -1;
+
 void tear_down()
-{ /**** close socket (half) ****/
+{
+    if (close(sockfd_half) == -1)
+    {
+        perror("close");
+        exit(EXIT_FAILURE);
+    }
 }
 
 int run()
 {
-    pid_t k;
-    // char buf[PIPE_BUF];
     int status;
 
     while (1)
     {
-        /**** accept with half-associate descriptor ****/
-        // will get new socket descriptor
+        // accept connection
+        int sockfd_full = -1;
+        struct sockaddr client_addr;
+        socklen_t client_addr_len;
+        if ((sockfd_full =
+                 accept(sockfd_half, &client_addr, &client_addr_len)) == -1)
+        {
+            perror("accept");
+            return -1;
+        }
 
-        /** Toss coin to ignore or not ignore the command **/
+        // TODO: Toss coin to ignore or not ignore the command
 
-        /**** read command ****/
-        /** check source address **/
-        /** only allow `date` and `/bin/date` **/
+        // TODO: check source address
 
-        // ssize_t command_len = read(server_fifo_fd, buf, PIPE_BUF);
-        // if (command_len == -1)
-        //     return -1;
-        // else if (command_len == 0) // EOF
-        //     continue;              // busy wait for the new command from
-        //     clients
+        // read command
+        char command[BUFFER_SIZE];
+        ssize_t command_len =
+            read(sockfd_full, command, BUFFER_SIZE * sizeof(char));
+        if (command_len == -1)
+        {
+            perror("read");
+            return -1;
+        }
+        else if (command_len == 0) // EOF
+            continue;
 
-        // char *pid_str = strtok(buf, "\n");
-        // char *command = strtok(NULL, "\0");
+        command[command_len] = '\0';
 
-        // if (!pid_str || !command) return -1;
-
-        // fprintf(stdout, "[%s]$ %s", pid_str, command);
-
-        // int client_fifo_fd;
+        // only allow `date` and `/bin/date`
+        if (strncmp(command, "date", 4) != 0 &&
+            strncmp(command, "/bin/date", 9) != 0)
+        {
+            fprintf(stderr, "command not allowed: %s\n", command);
+            continue;
+        }
 
         fflush(stdout); // flush stdout before forking
-        k = fork();
+        pid_t k = fork();
         if (k == 0)
         {
             // child code
 
-            /**** redirect stdout to socket (full) ****/
-            // // open client FIFO according to the parsed pid
-            // char client_fifo_filename[100] = CLIENT_FIFO_NAME_PREFIX;
-            // strcat(client_fifo_filename, pid_str);
-            // client_fifo_fd = open(client_fifo_filename, O_WRONLY);
-            // if (client_fifo_fd == -1) return -1;
-            // redirect stdout to client FIFO file descriptor
-            // if (dup2(client_fifo_fd, STDOUT_FILENO) == -1 ||
-            //     dup2(client_fifo_fd, STDERR_FILENO) == -1)
-            //     exit(EXIT_FAILURE);
+            // redirect stdout and stderr to socket (full)
+            if (dup2(sockfd_full, STDOUT_FILENO) == -1 ||
+                dup2(sockfd_full, STDERR_FILENO) == -1)
+            {
+                perror("dup2");
+                exit(EXIT_FAILURE);
+            }
 
-            /**** execute command ****/
-            // int result = execvp(arguments[0], arguments);
-
-            // if (result == -1) // if execution failed, terminate child
-            // {
-            //     fprintf(stderr, "Command not found: %s", command);
-            //     exit(EXIT_FAILURE);
-            // }
+            // execute command
+            char *argv[] = {strdup(command), NULL};
+            if (execvp(command, argv) == -1)
+            {
+                fprintf(stderr, "command not found: %s", command);
+                exit(EXIT_FAILURE);
+            }
         }
         else
         {
             // parent code
             waitpid(k, &status, 0);
 
-            /**** close socket (full) ****/
-            // close(client_fifo_fd);
+            // close socket (full)
+            if (close(sockfd_full) == -1)
+            {
+                perror("close");
+                return -1;
+            }
         }
     }
 
@@ -89,23 +111,31 @@ static void sigint_handler(int _)
     exit(EXIT_SUCCESS);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     struct sigaction sigint_action = {.sa_handler = sigint_handler};
     sigaction(SIGINT, &sigint_action, NULL);
 
-    /**** create and bind socket (half) ****/
-    // if (mkfifo(SERVER_FIFO_NAME, S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH) ==
-    // -1)
-    //     return -1;
-    // server_fifo_fd = open(SERVER_FIFO_NAME, O_RDONLY);
-    // if (server_fifo_fd == -1)
-    // {
-    //     unlink(SERVER_FIFO_NAME);
-    //     return -1;
-    // }
+    struct addrinfo *info;
+    if (parse_addrinfo_arg(argc, argv, &info) != 0) return -1;
 
-    /**** listen ****/
+    // create half-associate socket
+    if ((sockfd_half = create_socket_with_first_usable_addr(info)) == -1)
+        return -1;
+
+    // bind to the socket
+    if ((bind_socket_with_first_usable_addr(info, sockfd_half)) == -1)
+    {
+        if (close(sockfd_half) == -1) perror("close");
+        return -1;
+    }
+
+    // listen to the socket
+    if ((listen(sockfd_half, MAX_LISTEN_NUM)) == -1)
+    {
+        if (close(sockfd_half) == -1) perror("close");
+        return -1;
+    }
 
     int status = run();
 

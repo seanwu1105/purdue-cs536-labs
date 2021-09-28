@@ -1,4 +1,5 @@
 #include "../lib/socket_utils.h"
+#include "parse_addrinfo_arg.h"
 #include <netdb.h>
 #include <signal.h>
 #include <stdio.h>
@@ -40,10 +41,7 @@ int run(const struct addrinfo *const server_info)
 
         // create socket
         if ((sockfd = create_socket_with_first_usable_addr(server_info)) == -1)
-        {
-            perror("socket");
             return -1;
-        }
 
         // connect to server
         if (connect(sockfd, server_info->ai_addr, server_info->ai_addrlen) ==
@@ -84,29 +82,13 @@ int run(const struct addrinfo *const server_info)
     return 0;
 }
 
-int parse_arg(int argc, char *argv[], struct addrinfo **info)
-{
-    if (argc < REQUIRED_ARGC)
-    {
-        fprintf(stderr, "insufficient arguments: expect %d\n", REQUIRED_ARGC);
-        return -1;
-    }
-    const char *const server_ip = argv[1];
-    const char *const server_port = argv[2];
-
-    int status;
-    if ((status = build_addrinfo(info, server_ip, server_port)) != 0)
-        return status;
-    return 0;
-}
-
 int main(int argc, char *argv[])
 {
     struct sigaction sigint_action = {.sa_handler = sigint_handler};
     sigaction(SIGINT, &sigint_action, NULL);
 
     struct addrinfo *server_info;
-    if (parse_arg(argc, argv, &server_info) != 0) return -1;
+    if (parse_addrinfo_arg(argc, argv, &server_info) != 0) return -1;
 
     int status = run(server_info);
 

@@ -11,7 +11,9 @@
     "read_config.h": "c",
     "unistd.h": "c",
     "socket.h": "c",
-    "signal.h": "c"
+    "signal.h": "c",
+    "socket_utils.h": "c",
+    "parse_addrinfo_arg.h": "c"
   },
   "[json, jsonc, markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

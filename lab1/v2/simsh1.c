@@ -84,7 +84,7 @@ int start_server()
 
                 if (result == -1) // if execution failed, terminate child
                 {
-                    fprintf(stderr, "Command not found: %s\n", command);
+                    fprintf(stderr, "command not found: %s\n", command);
                     exit(EXIT_FAILURE);
                 }
             }

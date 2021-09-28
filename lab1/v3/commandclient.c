@@ -49,6 +49,7 @@ int start_client()
         }
 
         if (len * sizeof(char) <= PIPE_BUF)
+        {
             if (write(server_fifo_fd, prefixed_command, len * sizeof(char)) ==
                 -1)
             {
@@ -57,6 +58,7 @@ int start_client()
             }
             else
                 fprintf(stderr, "Command length too long.\n");
+        }
 
         if (close(server_fifo_fd) == -1)
         {

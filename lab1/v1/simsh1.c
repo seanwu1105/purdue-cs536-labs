@@ -40,7 +40,7 @@ int main()
 
             if (result == -1) // if execution failed, terminate child
             {
-                fprintf(stderr, "Command not found: %s\n", buf);
+                fprintf(stderr, "command not found: %s\n", buf);
                 exit(EXIT_FAILURE);
             }
         }
