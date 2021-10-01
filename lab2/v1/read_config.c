@@ -19,38 +19,17 @@ int read_config(Config *const config)
     fclose(file);
     if (read_bytes <= 0) return -1;
 
-    const char *key = strtok(content, "  \t\n");
-    while (key)
-    {
-        if (strlen(key) != 1) return -1;
+    const char *val = strtok(content, "  \t\n");
+    config->num_packages = (unsigned short)strtoul(val, NULL, 0);
 
-        const char *val = strtok(NULL, "  \t\n");
+    val = strtok(NULL, "  \t\n");
+    config->timeout = (unsigned short)strtoul(val, NULL, 0);
 
-        switch (key[0])
-        {
-        case 'N':
-            config->num_packages = (unsigned short)strtoul(val, NULL, 0);
-            break;
+    val = strtok(NULL, "  \t\n");
+    config->server_delay = (uint8_t)strtoul(val, NULL, 0);
 
-        case 'T':
-            config->timeout = (unsigned short)strtoul(val, NULL, 0);
-            break;
-
-        case 'D':
-            config->server_delay = (uint8_t)strtoul(val, NULL, 0);
-            break;
-
-        case 'S':
-            config->first_sequence_num = (int32_t)strtol(val, NULL, 0);
-            break;
-
-        default:
-            fprintf(stderr, "unknown configuration key: %s\n", key);
-            return -1;
-        }
-
-        key = strtok(NULL, "  \t\n");
-    }
+    val = strtok(NULL, "  \t\n");
+    config->first_sequence_num = (int32_t)strtol(val, NULL, 0);
 
     return 0;
 }
