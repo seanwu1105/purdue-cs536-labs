@@ -158,6 +158,7 @@ byte ordering. Test your ping app to verify correctness.
 
 ## TODO
 
+- last package to wait 10 seconds
 - multiple clients on different machine
   - MID same and should not interfere
 - remove unnecessary printf in v1

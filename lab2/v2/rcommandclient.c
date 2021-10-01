@@ -12,7 +12,8 @@
 #define REQUIRED_ARGC 3
 #define BUFFER_SIZE 1024
 #define TIMEOUT_SEC 2
-// #define MAX_ATTEMPTS 3
+#define MAX_ATTEMPTS 3
+#define ERR_GIVE_UP -2
 
 int sockfd = -1;
 
@@ -32,6 +33,46 @@ static void sigint_handler(int _)
 }
 
 static void sigalrm_handler(int _) { return; }
+
+int attempt_write_and_read(const char *command)
+{
+    for (size_t attempt = 0; attempt < MAX_ATTEMPTS; ++attempt)
+    {
+        // write command to server
+        if (write(sockfd, command, (strlen(command) + 1) * sizeof(char)) == -1)
+        {
+            perror("write");
+            return -1;
+        }
+
+        // set timeout alarm
+        alarm(TIMEOUT_SEC);
+
+        // read response from server
+        char buf[BUFFER_SIZE];
+        ssize_t result_len;
+        while (result_len = read(sockfd, buf, sizeof(buf) - 1), result_len > 0)
+        {
+            alarm(0); // cancel timeout alarm
+            buf[result_len] = '\0';
+            fprintf(stdout, "%s", buf);
+        }
+
+        if (result_len == 0) return 0;
+
+        if (result_len == -1)
+        {
+            if (errno == EINTR)
+            {
+                fprintf(stderr, "timeout\n");
+                continue;
+            }
+            return -1;
+        }
+    }
+
+    return ERR_GIVE_UP;
+}
 
 int run(const struct addrinfo *const server_info)
 {
@@ -54,27 +95,7 @@ int run(const struct addrinfo *const server_info)
             return -1;
         }
 
-        // TODO: attempt to send command -> a nested loop
-
-        // set timeout alarm
-        alarm(TIMEOUT_SEC);
-
-        // write command to server
-        if (write(sockfd, command, (strlen(command) + 1) * sizeof(char)) == -1)
-        {
-            perror("write");
-            return -1;
-        }
-
-        // read response from server
-        char buf[BUFFER_SIZE];
-        ssize_t result_len;
-        while (result_len = read(sockfd, buf, sizeof(buf) - 1), result_len > 0)
-        {
-            alarm(0); // cancel timeout alarm
-            buf[result_len] = '\0';
-            fprintf(stdout, "%s", buf);
-        }
+        int status = attempt_write_and_read(command);
 
         // close socket
         if (close(sockfd) == -1)
@@ -82,15 +103,11 @@ int run(const struct addrinfo *const server_info)
             perror("close");
             return -1;
         }
-        if (result_len == -1)
-        {
-            if (errno == EINTR)
-            {
-                fprintf(stderr, "timeout\n");
-                continue;
-            }
-            return -1;
-        }
+
+        if (status == -1) return -1;
+        if (status == ERR_GIVE_UP)
+            fprintf(stderr, "after %d attemps failed: giving up\n",
+                    MAX_ATTEMPTS);
     }
     return 0;
 }
