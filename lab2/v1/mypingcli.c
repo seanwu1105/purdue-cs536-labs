@@ -66,24 +66,24 @@ int receive_feedback(int32_t *const id)
 }
 
 int ping(const struct sockaddr *target_addr, const int32_t id,
-         const Config config)
+         const uint8_t server_delay, const unsigned short timeout)
 {
     struct timeval start_time;
     gettimeofday(&start_time, NULL);
 
-    printf("send MID: %d\t", id);
+    // printf("send MID: %d\t", id);
     fflush(stdout);
-    if (send_pinging(target_addr, id, config.server_delay) == -1) return -1;
+    if (send_pinging(target_addr, id, server_delay) == -1) return -1;
 
     int32_t feedback_id;
-    alarm(config.timeout); // start timeout timer
+    alarm(timeout); // start timeout timer
     while (1)
     {
         if (receive_feedback(&feedback_id) == -1)
         {
             if (errno == EINTR) // timeout
             {
-                printf("timeout\n");
+                // printf("timeout\n");
                 break;
             }
             return -1;
@@ -106,9 +106,14 @@ int ping(const struct sockaddr *target_addr, const int32_t id,
 int run(const struct sockaddr *target_addr, const Config config)
 {
     for (size_t i = 0; i < config.num_packages; i++)
-        if (ping(target_addr, config.first_sequence_num + (int32_t)i, config) ==
-            -1)
+    {
+        const unsigned short timeout =
+            i == config.num_packages - 1 ? 10 : config.timeout;
+
+        if (ping(target_addr, config.first_sequence_num + (int32_t)i,
+                 config.server_delay, timeout) == -1)
             return -1;
+    }
 
     return 0;
 }

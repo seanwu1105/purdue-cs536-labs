@@ -104,7 +104,7 @@ int run()
             int toss_coin = rand() % 2;
             if (toss_coin == 0) // ignore command
             {
-                printf("ignored\n");
+                // printf("ignored\n");
                 continue;
             }
             else

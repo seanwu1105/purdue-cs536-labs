@@ -64,7 +64,7 @@ int attempt_write_and_read(const char *command)
         {
             if (errno == EINTR)
             {
-                fprintf(stderr, "timeout\n");
+                // printf("timeout\n");
                 continue;
             }
             return -1;
