@@ -93,9 +93,9 @@ int ping(const struct sockaddr *target_addr, const int32_t id,
             alarm(0); // cancel timeout timer
             struct timeval end_time;
             gettimeofday(&end_time, NULL);
-            fprintf(stdout, "%ld\n",
+            fprintf(stdout, "%.3f ms\n",
                     (end_time.tv_sec - start_time.tv_sec) * 1000 +
-                        (end_time.tv_usec - start_time.tv_usec) / 1000);
+                        (end_time.tv_usec - start_time.tv_usec) / 1000.0);
             break;
         }
     }
