@@ -111,4 +111,6 @@ testing do not keep the server running.
 
 ## TODO
 
-- large read
+- how to get or assign IP/port to server?
+- do we need to print timeout?
+- what is the format for pingparam.dat?

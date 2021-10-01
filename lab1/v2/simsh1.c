@@ -100,7 +100,7 @@ int start_server()
 
 int main()
 {
-    struct sigaction sigint_action = {.sa_handler = sigint_handler};
+    const struct sigaction sigint_action = {.sa_handler = sigint_handler};
     sigaction(SIGINT, &sigint_action, NULL);
 
     if (mkfifo(SERVER_FIFO_NAME, S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH) == -1)

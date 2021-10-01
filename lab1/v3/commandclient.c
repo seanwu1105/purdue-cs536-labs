@@ -92,7 +92,7 @@ int start_client()
 
 int main()
 {
-    struct sigaction sigint_action = {.sa_handler = sigint_handler};
+    const struct sigaction sigint_action = {.sa_handler = sigint_handler};
     sigaction(SIGINT, &sigint_action, NULL);
 
     get_client_fifo_name(client_fifo_name, sizeof(client_fifo_name));
