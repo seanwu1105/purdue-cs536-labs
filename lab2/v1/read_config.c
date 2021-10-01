@@ -15,7 +15,8 @@ int read_config(Config *const config)
     }
 
     char content[BUFFER_SIZE];
-    ssize_t read_bytes = fread(content, 1, BUFFER_SIZE, file);
+    const ssize_t read_bytes = fread(content, 1, BUFFER_SIZE, file);
+    fclose(file);
     if (read_bytes <= 0) return -1;
 
     const char *key = strtok(content, "  \t\n");

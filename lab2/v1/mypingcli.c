@@ -48,7 +48,7 @@ int receive_feedback(int32_t *const id)
 {
     uint8_t message[MESSAGE_LEN];
 
-    ssize_t message_len =
+    const ssize_t message_len =
         recvfrom(sockfd, message, sizeof(message), 0, NULL, NULL);
 
     if (message_len == -1)

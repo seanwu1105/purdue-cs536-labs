@@ -46,7 +46,7 @@ int run()
 
         // read command
         char command[BUFFER_SIZE];
-        ssize_t command_len =
+        const ssize_t command_len =
             read(sockfd_full, command, BUFFER_SIZE * sizeof(char));
         if (command_len == -1)
         {
@@ -67,7 +67,7 @@ int run()
         }
 
         fflush(stdout); // flush stdout before forking
-        pid_t k = fork();
+        const pid_t k = fork();
         if (k == 0)
         {
             // child code

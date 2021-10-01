@@ -30,22 +30,21 @@ void tear_down()
 
 int start_server()
 {
-    pid_t k;
     char buf[PIPE_BUF];
     int status;
 
     while (1)
     {
         // read command from FIFO
-        ssize_t command_len = read(server_fifo_fd, buf, PIPE_BUF);
+        const ssize_t command_len = read(server_fifo_fd, buf, PIPE_BUF);
         if (command_len == -1)
             return -1;
         else if (command_len == 0) // EOF
             continue;              // busy wait for the new command from clients
         buf[command_len] = '\0';
 
-        char *pid_str = strtok(buf, "\n");
-        char *command = strtok(NULL, "\0");
+        const char *pid_str = strtok(buf, "\n");
+        const char *command = strtok(NULL, "\0");
 
         if (!pid_str || !command) return -1;
 
@@ -57,7 +56,7 @@ int start_server()
         int client_fifo_fd = -1;
 
         fflush(stdout); // flush stdout before forking
-        k = fork();
+        const pid_t k = fork();
         if (k == 0)
         {
             // child code

@@ -20,9 +20,9 @@ static void sigint_handler(int _)
     exit(EXIT_SUCCESS);
 }
 
-void get_client_fifo_name(char *name, size_t size)
+void get_client_fifo_name(char *name, const size_t size)
 {
-    pid_t pid = getpid();
+    const pid_t pid = getpid();
     snprintf(name, size, "%s%d", CLIENT_FIFO_NAME_PREFIX, pid);
 }
 
@@ -39,7 +39,7 @@ int start_client()
         snprintf(prefixed_command, sizeof(prefixed_command), "%d\n%s", getpid(),
                  command);
 
-        size_t len = strlen(prefixed_command) + 1;
+        const size_t len = strlen(prefixed_command) + 1;
 
         int server_fifo_fd = open(SERVER_FIFO_NAME, O_WRONLY);
         if (server_fifo_fd == -1)

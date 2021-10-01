@@ -11,7 +11,6 @@
 
 int main()
 {
-    pid_t k;
     char buf[BUFFER_LEN];
     int status;
     int len;
@@ -32,7 +31,7 @@ int main()
         parse_command(buf, arguments);
 
         fflush(stdout); // flush stdout before forking
-        k = fork();
+        const pid_t k = fork();
         if (k == 0)
         {
             // child code

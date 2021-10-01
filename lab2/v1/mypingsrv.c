@@ -50,7 +50,7 @@ int run()
 
     while (1)
     {
-        ssize_t message_len =
+        const ssize_t message_len =
             recvfrom(sockfd, message, sizeof(message), 0, &originating_addr,
                      &originating_addr_len);
 
@@ -69,7 +69,7 @@ int run()
         if (delay == 99) return 0;
         if (delay < 0 || delay > 5) continue;
         fflush(stdout);
-        pid_t pid = fork();
+        const pid_t pid = fork();
         if (pid == 0) // child process
             feedback(originating_addr, id, delay);
     }

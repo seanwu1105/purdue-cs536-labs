@@ -158,7 +158,6 @@ byte ordering. Test your ping app to verify correctness.
 
 ## TODO
 
-- add const to char \*
 - multiple clients on different machine
   - MID same and should not interfere
 - remove unnecessary printf in v1
