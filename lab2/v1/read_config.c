@@ -1,6 +1,9 @@
 #include "read_config.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#define BUFFER_SIZE 128
 
 int read_config(Config *const config)
 {
@@ -11,10 +14,18 @@ int read_config(Config *const config)
         return -1;
     }
 
-    char key;
-    char val[128];
-    while (fscanf(file, "%c=%127[^\n]%*c", &key, val) == 2)
-        switch (key)
+    char content[BUFFER_SIZE];
+    ssize_t read_bytes = fread(content, 1, BUFFER_SIZE, file);
+    if (read_bytes <= 0) return -1;
+
+    const char *key = strtok(content, "  \t\n");
+    while (key)
+    {
+        if (strlen(key) != 1) return -1;
+
+        const char *val = strtok(NULL, "  \t\n");
+
+        switch (key[0])
         {
         case 'N':
             config->num_packages = (unsigned short)strtoul(val, NULL, 0);
@@ -33,9 +44,12 @@ int read_config(Config *const config)
             break;
 
         default:
-            fprintf(stderr, "unknown configuration key: %c\n", key);
+            fprintf(stderr, "unknown configuration key: %s\n", key);
             return -1;
         }
+
+        key = strtok(NULL, "  \t\n");
+    }
 
     return 0;
 }

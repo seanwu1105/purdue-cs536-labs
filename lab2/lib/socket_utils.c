@@ -45,7 +45,7 @@ int create_socket_with_first_usable_addr(const struct addrinfo *const info)
     {
         if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
         {
-            perror("[attempt] socket");
+            perror("socket (attempt)");
             continue;
         }
 
@@ -70,7 +70,7 @@ int bind_socket_with_first_usable_addr(const struct addrinfo *const info,
 
         if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1)
         {
-            perror("[attempt] bind");
+            perror("bind (attempt)");
             continue;
         }
 
