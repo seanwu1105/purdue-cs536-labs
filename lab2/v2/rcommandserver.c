@@ -23,6 +23,25 @@ void tear_down()
     }
 }
 
+// only allow `date` and `/bin/date`
+int sanitize_command(const char *const command)
+{
+    char *allowed_commands[] = {"date", "/bin/date"};
+
+    for (int i = 0; i < sizeof(allowed_commands) / sizeof(char *); i++)
+        if (strncmp(command, allowed_commands[i],
+                    strlen(allowed_commands[i])) == 0)
+            return 0;
+    fprintf(stderr, "command not allowed: %s", command);
+    return -1;
+}
+
+void remove_newline(char *const command)
+{
+    int len = strlen(command);
+    if (command[len - 1] == '\n') command[len - 1] = '\0';
+}
+
 int run()
 {
     int status;
@@ -59,12 +78,9 @@ int run()
         command[command_len] = '\0';
 
         // only allow `date` and `/bin/date`
-        if (strncmp(command, "date", 4) != 0 &&
-            strncmp(command, "/bin/date", 9) != 0)
-        {
-            fprintf(stderr, "command not allowed: %s\n", command);
-            continue;
-        }
+        if (sanitize_command(command) == -1) continue;
+
+        remove_newline(command);
 
         fflush(stdout); // flush stdout before forking
         const pid_t k = fork();
@@ -81,7 +97,7 @@ int run()
             }
 
             // execute command
-            char *argv[] = {strdup(command), NULL};
+            char *const argv[] = {strdup(command), NULL};
             if (execvp(command, argv) == -1)
             {
                 fprintf(stderr, "command not found: %s", command);
@@ -113,7 +129,7 @@ static void sigint_handler(int _)
 
 int main(int argc, char *argv[])
 {
-    struct sigaction sigint_action = {.sa_handler = sigint_handler};
+    const struct sigaction sigint_action = {.sa_handler = sigint_handler};
     sigaction(SIGINT, &sigint_action, NULL);
 
     struct addrinfo *info;
@@ -133,6 +149,7 @@ int main(int argc, char *argv[])
     // listen to the socket
     if ((listen(sockfd_half, MAX_LISTEN_NUM)) == -1)
     {
+        perror("listen");
         if (close(sockfd_half) == -1) perror("close");
         return -1;
     }
