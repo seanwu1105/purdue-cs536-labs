@@ -100,7 +100,7 @@ Implement your client/server app in a modular fashion and provide a Makefile in
 Execute the client with command-line arguments
 
 ```
-% recommandclient.bin server-IP server-port
+% rcommandclient.bin server-IP server-port
 ```
 
 that specify the server's IP address and port number. Create README under `v2/`
@@ -109,14 +109,63 @@ their roles. Test your client/server app with multiple client processes and
 verify correctness. Even with the protection measures in place, except when
 testing do not keep the server running.
 
-## TODO
+## Getting Started
 
-v2
+Build `rcommandclient.bin` and `rcommandserver.bin` with the `make` command in
+the `/v2` directory.
 
-- how to get or assign IP/port to server?
-- do we need to print timeout?
+```sh
+make
+```
 
-v1
+Start the server first to get ready for accepting remote commands.
 
-- what is the format for pingparam.dat?
-- do we need to print timeout?
+```sh
+./rcommandserver.bin <server-ip-address> <server-port-number>
+```
+
+After the server is running, start new clients in other terminals.
+
+```sh
+./rcommandclient.bin <server-ip-address> <server-port-number>
+```
+
+To stop a running pinging server or client, send `SIGINT` with <kbd>ctrl</kbd> +
+<kbd>c</kbd> on Linux.
+
+## Security Protection
+
+Due to security reason, the clients can only send `date` and `/bin/date`
+commands. All other commands will be ignored by the server.
+
+Besides, the server will only accept the client from `128.10.25.*` or
+`128.10.112.*`. If you want to test the server with clients in different IP
+address, we can manually modify the `allowed_ips` array in `rcommandserver.c`.
+
+Though the server has a simple security protection mentioned above. The code is
+not audited or passes any real-world security test. Please use the
+`rcommandserver` only for experiment inside a secure environment (e.g. docker).
+
+## Project Structure
+
+### `rcommandclient.c`
+
+The source of `rcommandclient`. For security reasons, there are several
+limitation mentioned above on the client side.
+
+If a command is timeout, the client will attempt again up to 3 times. You can
+modify the maximum attempt with `MAX_ATTEMPTS` definition in `rcommandclient.c`.
+
+We do not handle any message longer than maximum read size because we only
+accept `date` and `/bin/date` commands which are relatively short in command per
+se and their return values.
+
+### `rcommandserver.c`
+
+The source of `rcommandserver`. It will ignore the remote command randomly to
+simulate the behavior of `rcommandclient` on package lost or timeout.
+
+### `parse_addrinfo_arg.c`
+
+Parse the address information, including IP address and port number, from argv
+and create a data with `struct addrinfo` type.

@@ -156,8 +156,67 @@ their roles. When sending and receiving 5-byte messages, note that the x86 Linux
 PCs in our labs use little endian byte ordering whereas Ethernet uses big endian
 byte ordering. Test your ping app to verify correctness.
 
-## TODO
+## Getting Started
 
-- multiple clients on different machine
-  - MID same and should not interfere
-- complete README
+Build `mypingsrv` and `mypingcli` with the `make` command in the `/v1`
+directory.
+
+```sh
+make
+```
+
+Start the server first to get ready for pinging.
+
+```sh
+./mypingsrv <server-ip-address> <server-port-number>
+```
+
+After the server is running, start new clients in new terminals, which will
+start the pinging process.
+
+```sh
+./mypingcli <client-ip-address> <server-ip-address> <server-port-number>
+```
+
+You can config the pinging process by setting parameters in `pingparam.dat`. See
+implementation details for client operations above for the configuration.
+
+To stop a running pinging server or client, send `SIGINT` with <kbd>ctrl</kbd> +
+<kbd>c</kbd> on Linux. Once the server has been stopped, clients would not
+receive any pinging feedback.
+
+To clean up for project rebuild on failed, use the following command.
+
+```sh
+make clean
+```
+
+## Project Structure
+
+### `mypingcli.c`
+
+The source of `mypingcli`. For each pinging, it will send the pinging signal to
+the assigned `mypingsrv` with UDP and then wait for the result from `mypingsrv`
+with UDP. If no result is received before the timeout, `mypingcli` move forward
+to the next pinging and ignore all previous results.
+
+### `mypingsrv.c`
+
+The source of `mypingsrv`. After starting running with assigned IP address and
+port number, `mypingsrv` wait for a UDP package. After executing the predefined
+behavior according to the pinging message, `mypingsrv` will send back the
+message to `mypingcli`.
+
+### `read_config.c`
+
+Provides functionalities to read and parse configurations in `pingparam.dat`.
+The parsed configurations will be stored in a `struct Config` data type
+variable. There will be 4 integers, separated by space, in the `pingparam.dat`
+file: (_N_ _T_ _D_ _S_).
+
+### `message_codec.c`
+
+Handles the message encoding and decoding. The message in the pinging process
+can be created by a 4-bytes message ID (MID) and a 1-byte delay parameter. This
+source file provides the functionalities to convert a 5-bytes message to a MID
+and delay parameter and vice versa.
