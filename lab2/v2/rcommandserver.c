@@ -26,7 +26,7 @@ void tear_down()
 // only allow `date` and `/bin/date`
 int sanitize_command(const char *const command)
 {
-    char *allowed_commands[] = {"date", "/bin/date"};
+    const char *const allowed_commands[] = {"date", "/bin/date"};
 
     for (int i = 0; i < sizeof(allowed_commands) / sizeof(char *); i++)
         if (strncmp(command, allowed_commands[i],
@@ -38,8 +38,23 @@ int sanitize_command(const char *const command)
 
 void remove_newline(char *const command)
 {
-    int len = strlen(command);
+    const int len = strlen(command);
     if (command[len - 1] == '\n') command[len - 1] = '\0';
+}
+
+ssize_t read_command(const int sockfd_full, char *command)
+{
+    const ssize_t command_len =
+        read(sockfd_full, command, BUFFER_SIZE * sizeof(char));
+    if (command_len == -1)
+    {
+        perror("read");
+        return -1;
+    }
+
+    command[command_len] = '\0';
+
+    return command_len;
 }
 
 int run()
@@ -59,23 +74,24 @@ int run()
             return -1;
         }
 
-        // TODO: Toss coin to ignore or not ignore the command
-
         // TODO: check source address
 
-        // read command
         char command[BUFFER_SIZE];
-        const ssize_t command_len =
-            read(sockfd_full, command, BUFFER_SIZE * sizeof(char));
-        if (command_len == -1)
+        ssize_t command_len;
+        while ((command_len = read_command(sockfd_full, command)) > 0)
         {
-            perror("read");
-            return -1;
+            int toss_coin = rand() % 2;
+            if (toss_coin == 0) // ignore command
+            {
+                printf("ignored\n");
+                continue;
+            }
+            else
+                break;
         }
-        else if (command_len == 0) // EOF
-            continue;
 
-        command[command_len] = '\0';
+        if (command_len == -1) return -1;
+        if (command_len == 0) continue;
 
         // only allow `date` and `/bin/date`
         if (sanitize_command(command) == -1) continue;

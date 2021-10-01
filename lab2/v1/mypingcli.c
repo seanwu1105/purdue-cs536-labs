@@ -71,7 +71,7 @@ int ping(const struct sockaddr *target_addr, const int32_t id,
     struct timeval start_time;
     gettimeofday(&start_time, NULL);
 
-    fprintf(stdout, "send MID: %d\t", id);
+    printf("send MID: %d\t", id);
     fflush(stdout);
     if (send_pinging(target_addr, id, config.server_delay) == -1) return -1;
 
@@ -83,7 +83,7 @@ int ping(const struct sockaddr *target_addr, const int32_t id,
         {
             if (errno == EINTR) // timeout
             {
-                fprintf(stdout, "timeout\n");
+                printf("timeout\n");
                 break;
             }
             return -1;
@@ -93,7 +93,7 @@ int ping(const struct sockaddr *target_addr, const int32_t id,
             alarm(0); // cancel timeout timer
             struct timeval end_time;
             gettimeofday(&end_time, NULL);
-            fprintf(stdout, "RTT: %ld\n",
+            fprintf(stdout, "%ld\n",
                     (end_time.tv_sec - start_time.tv_sec) * 1000 +
                         (end_time.tv_usec - start_time.tv_usec) / 1000);
             break;

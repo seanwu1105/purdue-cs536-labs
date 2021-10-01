@@ -106,7 +106,7 @@ int run(const struct addrinfo *const server_info)
 
         if (status == -1) return -1;
         if (status == ERR_GIVE_UP)
-            fprintf(stderr, "after %d attemps failed: giving up\n",
+            fprintf(stderr, "after %d attempts failed: giving up\n",
                     MAX_ATTEMPTS);
     }
     return 0;
