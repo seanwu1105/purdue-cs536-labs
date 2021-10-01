@@ -88,13 +88,14 @@ int parse_arg(int argc, char *argv[], struct addrinfo **info)
     const char *const port = argv[2];
 
     int status;
-    if ((status = build_addrinfo(info, ip, port)) != 0) return status;
+    if ((status = build_addrinfo(info, ip, port, SOCK_DGRAM)) != 0)
+        return status;
     return 0;
 }
 
 int main(int argc, char *argv[])
 {
-    struct sigaction sigint_action = {.sa_handler = sigint_handler};
+    const struct sigaction sigint_action = {.sa_handler = sigint_handler};
     sigaction(SIGINT, &sigint_action, NULL);
 
     struct addrinfo *info;

@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -125,19 +126,20 @@ int parse_arg(int argc, char *argv[], struct addrinfo **client_info,
     const char *const server_port = argv[3];
 
     int status;
-    if ((status = build_addrinfo(server_info, server_ip, server_port)) != 0)
+    if ((status = build_addrinfo(server_info, server_ip, server_port,
+                                 SOCK_DGRAM)) != 0)
         return status;
 
-    if ((status = build_addrinfo(client_info, client_ip, "0")) != 0)
+    if ((status = build_addrinfo(client_info, client_ip, "0", SOCK_DGRAM)) != 0)
         return status;
     return 0;
 }
 
 int main(int argc, char *argv[])
 {
-    struct sigaction sigint_action = {.sa_handler = sigint_handler};
+    const struct sigaction sigint_action = {.sa_handler = sigint_handler};
     sigaction(SIGINT, &sigint_action, NULL);
-    struct sigaction sigalrm_action = {.sa_handler = sigalrm_handler};
+    const struct sigaction sigalrm_action = {.sa_handler = sigalrm_handler};
     sigaction(SIGALRM, &sigalrm_action, NULL);
 
     Config config = {};

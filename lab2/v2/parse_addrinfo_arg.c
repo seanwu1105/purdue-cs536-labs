@@ -2,6 +2,7 @@
 #include "../lib/socket_utils.h"
 #include <netdb.h>
 #include <stdio.h>
+#include <sys/socket.h>
 
 int parse_addrinfo_arg(int argc, char *argv[], struct addrinfo **info)
 {
@@ -14,7 +15,8 @@ int parse_addrinfo_arg(int argc, char *argv[], struct addrinfo **info)
     const char *const server_port = argv[2];
 
     int status;
-    if ((status = build_addrinfo(info, server_ip, server_port)) != 0)
+    if ((status = build_addrinfo(info, server_ip, server_port, SOCK_STREAM)) !=
+        0)
         return status;
     return 0;
 }

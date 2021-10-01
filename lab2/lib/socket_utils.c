@@ -22,12 +22,12 @@ int print_addrinfo(const struct addrinfo *const info)
 }
 
 int build_addrinfo(struct addrinfo **info, const char *const ip,
-                   const char *const port)
+                   const char *const port, const int socktype)
 {
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;      // IPv4
-    hints.ai_socktype = SOCK_DGRAM; // UDP
+    hints.ai_family = AF_INET;    // IPv4
+    hints.ai_socktype = socktype; // UDP
 
     int status;
     if ((status = getaddrinfo(ip, port, &hints, info)) != 0)
