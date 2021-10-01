@@ -2,6 +2,7 @@
 
 #include "../lib/socket_utils.h"
 #include "parse_addrinfo_arg.h"
+#include <arpa/inet.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,12 +24,32 @@ void tear_down()
     }
 }
 
-// only allow `date` and `/bin/date`
+int sanitize_client_addr(const struct sockaddr *const addr)
+{
+    char ipstr[INET_ADDRSTRLEN];
+    if (!inet_ntop(addr->sa_family, &((struct sockaddr_in *)addr)->sin_addr,
+                   ipstr, sizeof(ipstr)))
+    {
+        perror("inet_ntop");
+        return -1;
+    }
+
+    // only allow 128.10.25.* or 128.10.112.*
+    const char *const allowed_ips[] = {"128.10.25.", "128.10.112."};
+    for (size_t i = 0; i < sizeof(allowed_ips) / sizeof(allowed_ips[0]); i++)
+        if (strncmp(ipstr, allowed_ips[i], strlen(allowed_ips[i])) == 0)
+            return 0;
+
+    fprintf(stderr, "client address denied: %s", ipstr);
+    return -1;
+}
+
 int sanitize_command(const char *const command)
 {
+    // only allow `date` and `/bin/date`
     const char *const allowed_commands[] = {"date", "/bin/date"};
 
-    for (int i = 0; i < sizeof(allowed_commands) / sizeof(char *); i++)
+    for (size_t i = 0; i < sizeof(allowed_commands) / sizeof(char *); i++)
         if (strncmp(command, allowed_commands[i],
                     strlen(allowed_commands[i])) == 0)
             return 0;
@@ -66,7 +87,7 @@ int run()
         // accept connection
         int sockfd_full = -1;
         struct sockaddr client_addr;
-        socklen_t client_addr_len;
+        socklen_t client_addr_len = sizeof(client_addr);
         if ((sockfd_full =
                  accept(sockfd_half, &client_addr, &client_addr_len)) == -1)
         {
@@ -74,7 +95,7 @@ int run()
             return -1;
         }
 
-        // TODO: check source address
+        if (sanitize_client_addr(&client_addr) == -1) continue;
 
         char command[BUFFER_SIZE];
         ssize_t command_len;
@@ -93,7 +114,6 @@ int run()
         if (command_len == -1) return -1;
         if (command_len == 0) continue;
 
-        // only allow `date` and `/bin/date`
         if (sanitize_command(command) == -1) continue;
 
         remove_newline(command);

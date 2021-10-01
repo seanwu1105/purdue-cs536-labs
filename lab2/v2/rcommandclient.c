@@ -19,7 +19,7 @@ int sockfd = -1;
 
 void tear_down()
 {
-    if (close(sockfd) == -1)
+    if (sockfd != -1 && close(sockfd) == -1)
     {
         perror("close");
         exit(EXIT_FAILURE);
@@ -103,6 +103,7 @@ int run(const struct addrinfo *const server_info)
             perror("close");
             return -1;
         }
+        sockfd = -1;
 
         if (status == -1) return -1;
         if (status == ERR_GIVE_UP)
