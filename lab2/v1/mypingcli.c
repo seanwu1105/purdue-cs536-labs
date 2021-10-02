@@ -66,7 +66,8 @@ int receive_feedback(int32_t *const id)
 }
 
 int ping(const struct sockaddr *target_addr, const int32_t id,
-         const uint8_t server_delay, const unsigned short timeout)
+         const uint8_t server_delay, const unsigned short timeout,
+         const unsigned short is_last)
 {
     struct timeval start_time;
     gettimeofday(&start_time, NULL);
@@ -95,7 +96,10 @@ int ping(const struct sockaddr *target_addr, const int32_t id,
             fprintf(stdout, "%.3f ms\n",
                     (end_time.tv_sec - start_time.tv_sec) * 1000 +
                         (end_time.tv_usec - start_time.tv_usec) / 1000.0);
-            sleep(timeout); // wait until timeout
+            if (is_last)
+                alarm(0);
+            else
+                sleep(timeout); // wait until timeout
             break;
         }
     }
@@ -109,9 +113,10 @@ int run(const struct sockaddr *target_addr, const Config config)
     {
         const unsigned short timeout =
             i == config.num_packages - 1 ? 10 : config.timeout;
+        const unsigned short is_last = i == config.num_packages - 1;
 
         if (ping(target_addr, config.first_sequence_num + (int32_t)i,
-                 config.server_delay, timeout) == -1)
+                 config.server_delay, timeout, is_last) == -1)
             return -1;
     }
 
