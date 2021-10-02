@@ -38,11 +38,12 @@ int read_config(Config *const config)
     config->first_sequence_num = (int32_t)strtol(val, NULL, 0);
 
     if (sanitize_paramter(config->num_packages) == -1 ||
-        sanitize_paramter(config->timeout) == -1)
+        sanitize_paramter(config->timeout) == -1 ||
+        sanitize_paramter(config->first_sequence_num) == -1)
     {
-        fprintf(stderr, "invalid parameter: N=%hu, T=%hu. %s\n",
+        fprintf(stderr, "invalid parameter: N=%hu, T=%hu, S=%d. %s\n",
                 config->num_packages, config->timeout,
-                PARAMTER_RESTRICTION_MSG);
+                config->first_sequence_num, PARAMTER_RESTRICTION_MSG);
         return -1;
     }
 

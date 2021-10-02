@@ -67,10 +67,10 @@ int run()
         uint8_t delay;
         decode_message(message, &id, &delay);
 
-        if (sanitize_paramter(id) == -1 || sanitize_paramter(delay) == -1)
+        if (sanitize_paramter(delay) == -1)
         {
-            fprintf(stderr, "invalid message received: id=%d, delay=%hu. %s\n",
-                    id, delay, PARAMTER_RESTRICTION_MSG);
+            fprintf(stderr, "invalid message received: delay=%hu. %s\n", delay,
+                    PARAMTER_RESTRICTION_MSG);
             continue;
         }
 
@@ -79,7 +79,10 @@ int run()
         fflush(stdout);
         const pid_t pid = fork();
         if (pid == 0) // child process
+        {
             feedback(originating_addr, id, delay);
+            exit(EXIT_SUCCESS);
+        }
     }
 
     return 0;

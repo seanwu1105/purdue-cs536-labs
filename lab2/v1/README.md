@@ -2,7 +2,6 @@
 
 ## TODO
 
-- check signal handler resetting.
 - TIMER LOGIC!
 
 Implement an application layer ping client/server using datagram sockets
