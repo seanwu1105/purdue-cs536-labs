@@ -5,6 +5,9 @@
 
 #define CONFIG_FILENAME "pingparam.dat"
 
+#define PARAMTER_RESTRICTION_MSG                                               \
+    "All numbers other than 99 and 0-5 will be considered invalid."
+
 typedef struct
 {
     unsigned short num_packages; // 1 ~ 7
@@ -12,6 +15,8 @@ typedef struct
     uint8_t server_delay;        // 1 byte, 0 ~ 5 | 99
     int32_t first_sequence_num;  // 4 bytes
 } Config;
+
+int sanitize_paramter(const int param);
 
 int read_config(Config *const config);
 

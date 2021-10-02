@@ -5,6 +5,12 @@
 
 #define BUFFER_SIZE 128
 
+int sanitize_paramter(const int param)
+{
+    if (param < 0 || (param > 5 && param != 99)) return -1;
+    return 0;
+}
+
 int read_config(Config *const config)
 {
     FILE *file = fopen(CONFIG_FILENAME, "r");
@@ -30,6 +36,15 @@ int read_config(Config *const config)
 
     val = strtok(NULL, "  \t\n");
     config->first_sequence_num = (int32_t)strtol(val, NULL, 0);
+
+    if (sanitize_paramter(config->num_packages) == -1 ||
+        sanitize_paramter(config->timeout) == -1)
+    {
+        fprintf(stderr, "invalid parameter: N=%hu, T=%hu. %s\n",
+                config->num_packages, config->timeout,
+                PARAMTER_RESTRICTION_MSG);
+        return -1;
+    }
 
     return 0;
 }

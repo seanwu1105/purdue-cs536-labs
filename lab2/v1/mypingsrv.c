@@ -1,5 +1,6 @@
 #include "../lib/socket_utils.h"
 #include "message_codec.h"
+#include "read_config.h"
 #include <netdb.h>
 #include <signal.h>
 #include <stdio.h>
@@ -66,8 +67,15 @@ int run()
         uint8_t delay;
         decode_message(message, &id, &delay);
 
+        if (sanitize_paramter(id) == -1 || sanitize_paramter(delay) == -1)
+        {
+            fprintf(stderr, "invalid message received: id=%d, delay=%hu. %s\n",
+                    id, delay, PARAMTER_RESTRICTION_MSG);
+            continue;
+        }
+
         if (delay == 99) return 0;
-        if (delay < 0 || delay > 5) continue;
+
         fflush(stdout);
         const pid_t pid = fork();
         if (pid == 0) // child process
