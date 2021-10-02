@@ -1,12 +1,17 @@
 # Problem 1 [120 pts]
 
+## TODO
+
+- block invalid params.
+- check signal handler resetting.
+
 Implement an application layer ping client/server using datagram sockets
 (`SOCK_DGRAM`) that allows a client, `mypingcli`, to check if the ping server,
 `mypingsrv`, is running on a remote host, as well as estimate RTT (round-trip
 time). A socket is a type of file descriptor (note that Linux/UNIX distinguishes
-7 file types of which sockets is one) which is primarily used for sending data
+7 file types of which sockets are one) which is primarily used for sending data
 between processes running on different hosts. The hosts may run different
-operating systems (e.g., Linux, Windows, MacOS) on varied hardware platforms
+operating systems (e.g., Linux, Windows, macOS) on varied hardware platforms
 (e.g., x86 and ARM CPUs). Our lab machines run Linux on x86 PCs. Datagram
 sockets facilitate low overhead communication by not supporting reliability.
 That is, a message sent from a process running on one host to a process running
@@ -118,9 +123,9 @@ delay sending a response by _D_ seconds. If the value of the fifth byte equals
 99, then the server should terminate. Before sending a ping request, the client
 calls `gettimeofday()` to record the time stamp just before the packet is sent.
 Upon receiving a response from the server, the client calls `gettimeofday()` to
-take a second time stamp. Using the MID value in the response packet, the client
+take a second timestamp. Using the MID value in the response packet, the client
 calculates RTT by taking the difference of the corresponding send and receive
-time stamps which is output to stdout in unit of milliseconds (msec).
+timestamps which are output to stdout in a unit of milliseconds (msec).
 
 Upon starting up, the client reads from a configuration file, `pingparam.dat`,
 four integer values: _N_, _T_, _D_, _S_. _N_ is an integer between 1 and 7 that
@@ -128,9 +133,9 @@ specifies how many packets the client should send to the receiver. If _N_ > 1,
 then _T_ lying between 1 and 5 specifies how many seconds the client should wait
 before sending the next request. _D_ is the 1-byte command to be sent to the
 server, and _S_ is the sequence number (i.e., MID value) of the first packet.
-The 4-byte MID value of any additional ping packets are incremented by 1. For
-the last request packet, the client sets an alarm to expire after 10 seconds
-using `alarm()`. If a respond does not arrive and the alarm expires, the client
+The 4-byte MID value of any additional ping packets is incremented by 1. For the
+last request packet, the client sets an alarm to expire after 10 seconds using
+`alarm()`. If a response does not arrive and the alarm expires, the client
 ceases waiting and terminates.
 
 ### Operation: server
@@ -151,9 +156,9 @@ the client by 1-5 seconds.
 
 Implement your ping app in a modular fashion and provide a `Makefile` in `v1/`
 to compile and generate `mypingsrv` and `mypingcli`. Create `README` under `v1/`
-that specifies the files and functions of your code, and a brief description of
+that specifies the files and functions of your code and a brief description of
 their roles. When sending and receiving 5-byte messages, note that the x86 Linux
-PCs in our labs use little endian byte ordering whereas Ethernet uses big endian
+PCs in our labs use little-endian byte ordering whereas Ethernet uses big-endian
 byte ordering. Test your ping app to verify correctness.
 
 ## Getting Started
@@ -202,10 +207,10 @@ to the next pinging and ignore all previous results.
 
 ### `mypingsrv.c`
 
-The source of `mypingsrv`. After starting running with assigned IP address and
-port number, `mypingsrv` wait for a UDP package. After executing the predefined
-behavior according to the pinging message, `mypingsrv` will send back the
-message to `mypingcli`.
+The source of `mypingsrv`. After starting running with the assigned IP address
+and port number, `mypingsrv` waits for a UDP package. After executing the
+predefined behavior according to the pinging message, `mypingsrv` will send back
+the message to `mypingcli`.
 
 ### `read_config.c`
 

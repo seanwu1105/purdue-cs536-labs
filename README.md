@@ -4,7 +4,7 @@ Data Communication And Computer Networks
 
 ## Environment
 
-All unix system should be compatible. Specifically tested on the following lab
+All UNIX systems should be compatible. Specifically tested on the following lab
 servers.
 
 - data.cs.purdue.edu
