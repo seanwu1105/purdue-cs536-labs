@@ -90,12 +90,12 @@ int ping(const struct sockaddr *target_addr, const int32_t id,
         }
         if (feedback_id == id)
         {
-            alarm(0); // cancel timeout timer
             struct timeval end_time;
             gettimeofday(&end_time, NULL);
             fprintf(stdout, "%.3f ms\n",
                     (end_time.tv_sec - start_time.tv_sec) * 1000 +
                         (end_time.tv_usec - start_time.tv_usec) / 1000.0);
+            sleep(timeout); // wait until timeout
             break;
         }
     }
