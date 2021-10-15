@@ -74,13 +74,13 @@ addresses and UDP port numbers. Use wireshark/`tcpdump` as a confirmation tool.
 Do the same when analyzing the application layer payload carried by the Ethernet
 frames. Discuss your findings in `lab3.pdf`.
 
-Note: To run `tcpdump`, please use the command, `tcpdump -r - < testlogfile`,
-instead of, `tcpdump -r testlogfile`, which will trigger an "access denied"
-error. As noted in class, you may also run the command-line version of
-wireshark, `/usr/bin/tshark`, instead of `tcpdump`. To run wireshark, you will
-have to be physically at a lab machine. If you prefer, you may install wireshark
-on a Windows, MacOS, or Linux machine, copy testlogfile to the machine and run
-wireshark to inspect captured frames.
+> Note: To run `tcpdump`, please use the command, `tcpdump -r - < testlogfile`,
+> instead of, `tcpdump -r testlogfile`, which will trigger an "access denied"
+> error. As noted in class, you may also run the command-line version of
+> wireshark, `/usr/bin/tshark`, instead of `tcpdump`. To run wireshark, you will
+> have to be physically at a lab machine. If you prefer, you may install
+> wireshark on a Windows, MacOS, or Linux machine, copy testlogfile to the
+> machine and run wireshark to inspect captured frames.
 
 ## MAC Addresses
 
@@ -154,6 +154,18 @@ are:
 - D: 1
 - S: 0
 
+We start the server with port number `22222` first with the following command.
+
+```sh
+./mypingsrv 192.168.1.1 22222
+```
+
+Then, we start to ping the server with the following command.
+
+```sh
+veth 'mypingcli 192.168.1.2 192.168.1.1 22222'
+```
+
 The following is the contents of `testlogfile` collected by `tcpdump`:
 
 ```txt
@@ -218,9 +230,12 @@ has the following contents:
 0101 e94f 56ce 000d 8372 0000 0000 01
 ```
 
-The first 14 bytes are the header of the Ethernet frame. Inside the header, the
-first 6 bytes represent the destination MAC address. In this pinging case, the
-target MAC address is server's address, `62:b5:6d:a1:0d:bb`.
+### Ethernet Frame
+
+In the first packet, the first 14 bytes are the header of the Ethernet frame.
+Inside the header, the first 6 bytes represent the destination MAC address. In
+this pinging case, the target MAC address is server's address,
+`62:b5:6d:a1:0d:bb`.
 
 ```txt
 62 B5 6D A1 0D BB
@@ -239,4 +254,66 @@ EtherType of IPv4 is `0x0800`, which matches our experiment.
 
 ```txt
 08 00
+```
+
+### IPv4 Packet
+
+The payload of the Ethernet frame is the IPv4 packet. The last 8 bytes are the
+source and destination IP addresses. Take the first Ethernet packet from the log
+for example,
+
+```txt
+C0 A8 01 02 # source IP address: 192.168.1.2 (client)
+C0 A8 01 01 # destination IP address: 192.168.1.1 (server)
+```
+
+We can see the IP addresses in the packet match the IP addresses we assigned to
+the `mypingsrv` and `mypingcli`.
+
+### UDP Packet
+
+The payload of IPv4 packet is the UDP packet. The type of the payload can be
+identified from the 10th byte in IPv4 header. The value of the byte is `0x11`
+representing the payload uses UDP. The first 4 bytes in UDP is the source and
+destination port numbers. Take the first Ethernet packet from the log for
+example,
+
+```txt
+E9 4F # source port number: 59727 (client automatically assigned by OS)
+56 CE # destination port number: 22222 (server)
+```
+
+We can see the destination port number in the packet matches the port number we
+assigned to the server with `mypingsrv`.
+
+The last 5 bytes store the content of our message. Take the first Ethernet
+packet from the log for example,
+
+```txt
+00	00	00	00	01
+```
+
+That matches our configuration from `pingparam.dat`. In the first ping, the
+first 4 bytes of the data is the message number, which is `0` in this case. The
+last byte of the data is the delay, which is `1` in this case. We can see that
+for each pinging (client to server and back), the message number increases 1 in
+big-endian and delay remain the same, which is the same as our implementation.
+
+```txt
+10:35:57.121253 IP 192.168.1.2.59727 > 192.168.1.1.22222:
+	0x002A:  0000 0000 01
+10:35:58.121470 IP 192.168.1.1.22222 > 192.168.1.2.59727:
+	0x002A:  0000 0000 01
+10:35:59.121321 IP 192.168.1.2.59727 > 192.168.1.1.22222:
+	0x002A:  0100 0000 01
+10:36:00.121569 IP 192.168.1.1.22222 > 192.168.1.2.59727:
+	0x002A:  0100 0000 01
+10:36:01.121417 IP 192.168.1.2.59727 > 192.168.1.1.22222:
+	0x002A:  0200 0000 01
+10:36:02.121717 IP 192.168.1.1.22222 > 192.168.1.2.59727:
+	0x002A:  0200 0000 01
+10:36:03.121535 IP 192.168.1.2.59727 > 192.168.1.1.22222:
+	0x002A:  0300 0000 01
+10:36:04.121810 IP 192.168.1.1.22222 > 192.168.1.2.59727:
+	0x002A:  0300 0000 01
 ```
