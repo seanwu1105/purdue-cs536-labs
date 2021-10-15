@@ -1,319 +1,65 @@
-# Problem 1 [70 pts]
+# Problem 2 [120 pts]
 
-## 1.1 System set-up, traffic generation, and capture
-
-In this problem, you will sniff Ethernet frames on an Ethernet interface _veth0_
-on one of the pod machines in LWSN B148. When sniffing Ethernet frames, you are
-putting the interface in promiscuous mode which requires superuser privilege to
-do so. On a pod machine, run
+Modify Problem 2, lab2, so that the remote command server becomes a file server.
+The client, `myftpc`, is executed with command-line arguments
 
 ```sh
-sudo /usr/local/etc/tcpdumpwrap-veth0 -c 12 -w - > testlogfile
+myftpc server-IP server-port filename secret-key blocksize
 ```
 
-which will capture 12 Ethernet frames and save them into `testlogfile`. Enter
-your password when prompted. `tcpdumpwrap-veth0` is a wrapper of `tcpdump` that
-allows sudo execution. Check the man page of `tcpdump` for available options. To
-generate traffic arriving on _veth0_, use the ping app from Problem 1, lab2,
-with server `mypingsrv` running on a pod machine bound to IP address
-`192.168.1.1`. The client, `mypingcli`, is executed from the same machine using
+that specify server coordinates, name of the file to fetch, a secret key for
+authentication, and a blocksize (in unit of bytes) that is used to write the
+content of the transferred file. We will restrict file names to be less than or
+equal to 8 ASCII characters which must be lower- or upper-case alphabet. The
+secret key is an integer in the interval [0, 65535]. The client's request
+consists of a 2 byte unsigned integer which encodes the secret key, and a
+filename whose length is between 1-8 bytes. The client rejects command-line
+input that does not meet the length specifications. The client takes a timestamp
+before transmitting its request to the server, and a second timestamp after the
+last byte of the file has been received and written to disk. The client outputs
+to stdout the size of the file (in unit of bytes), completion time (second
+timestamp minus first timestamp), and throughput (file size divided by
+completion time).
+
+The server, `myftps`, is executed with command-line arguments
 
 ```sh
-veth 'mypingcli 192.168.1.2 192.168.1.1 srv-port'
+myftps server-IP server-port secret-key blocksize
 ```
 
-where `veth`, similar to our remote-command execution app from Problem 2, lab2,
-executes `mypingcli` at a machine with IP address `192.168.1.2`. Thus the client
-transmits/receives packets on interface `192.168.1.2`, and the server
-transmits/receives traffic through interface `192.168.1.1`. `192.168.1.1` is a
-private IP address that is not routable on the global IP Internet which has been
-configured for _veth0_. `192.168.1.2` is the IP address at the opposite end of
-veth0 as if the two interfaces were connected by a point-to-point Ethernet link.
+which specify the IP address and port number it should bind to, a secret key
+used to authenticate client requests, and a blocksize (in unit of bytes) that is
+used to read the content of the requested file. The server should not read more
+than 10 bytes from the client request to prevent buffer overflow. If the secret
+key communicated as the first two bytes of a request does not match the secret
+key provided in its command-line arguments, the request is ignored. The same
+goes if the filename fails to meet the naming convention. These checks are
+performed in addition to source IP address filtering carried out in Problem 2,
+lab2. The server will continue to toss a coin and ignore a request if it comes
+up heads. If a client request passes the preceding checks, the server process
+verifies that the requested file exists in the current working directory. If
+not, the request is ignored by closing the connection. Otherwise, a child is
+forked that reads the file content using `read()` in unit of blocksize bytes and
+calls `write()` to transmit the bytes to the client. The child closes the
+connection after the last byte has been transmitted.
 
-For security reasons, we cannot perform sniffing on _eth0_ which is the
-interface through which the lab machines, a shared resource, are connected to
-the Internet. Therefore we use dummy/virtual interfaces in Linux that allows
-veth0 to be configured as a separate Ethernet interface -- albeit virtual, not
-physical -- with private IP address `192.168.1.1` that can reach `192.168.1.2`,
-and vice versa. Thus performing `veth` at `192.168.1.2` on a pod machine does
-not execute `mypingcli` on a different physical machine equipped with an
-Ethernet interface _veth0_ with IP address `192.168.1.2`. Instead, both server
-`mypingsrv` and client mypingcli run on the same physical machine, and packet
-forwarding is handled virtually by Linux as if `192.168.1.2` were a physical
-Ethernet interface on a separate machine. For our Ethernet frame sniffing and
-inspection exercise, this will suffice.
-
-## 1.2 Traffic analysis
-
-Use parameters for mypingcli from Problem 1, lab2, so that at least 12 Ethernet
-frames are generated by the ping client/server app which will be captured by
-`tcpdumpwrap-veth0`. After doing so, analyze `testlogfile` using wireshark or
-`tcpdump` (`tcpdump` is also an analysis tool). Wireshark
-(`/usr/bin/wireshark-gtk`), the postcursor of ethereal, is a popular graphical
-tool for analyzing (as well as capturing) traffic logs in pcap format. Use
-wireshark or `tcpdump` to inspect the 12 captured Ethernet frames. Using the MAC
-address associated with `192.168.1.1` (perform `ifconfig -a` on a pod machine)
-and the MAC address associated with `192.168.1.2` (perform `veth 'ifconfig -a'`
-on the same pod machine), identify the relevant Ethernet frames whose payload
-are IPv4 packets that, in turn, contain UDP packets generated by the ping app,
-as their payload. Check the type field of the captured Ethernet frames to
-confirm that they are DIX frames.
-
-The first 20 bytes of Ethernet payload comprise IP header and the next 8 bytes
-the UDP header. The last 8 bytes of the IP header specify the source IP address
-and the destination IP address. Check their values against the IP addresses used
-by the ping app. The first four bytes of the UDP header specify the source and
-destination ports. Check that they match the port numbers used by the ping app.
-Inspect the remaining bytes of the captured Ethernet frames which comprise the
-application layer payload that `mypingcli` and `mypingsrv` sent using
-`sendto()`. For example, the client request is 5 bytes long comprised of a
-4-byte sequence number and 1-byte control field. Wireshark/`tcpdump` will
-provide output where Ethernet header fields (MAC addresses and type) are
-decoded. Inspect the captured raw data in hexadecimal form to match the IPv4
-addresses and UDP port numbers. Use wireshark/`tcpdump` as a confirmation tool.
-Do the same when analyzing the application layer payload carried by the Ethernet
-frames. Discuss your findings in `lab3.pdf`.
-
-> Note: To run `tcpdump`, please use the command, `tcpdump -r - < testlogfile`,
-> instead of, `tcpdump -r testlogfile`, which will trigger an "access denied"
-> error. As noted in class, you may also run the command-line version of
-> wireshark, `/usr/bin/tshark`, instead of `tcpdump`. To run wireshark, you will
-> have to be physically at a lab machine. If you prefer, you may install
-> wireshark on a Windows, MacOS, or Linux machine, copy testlogfile to the
-> machine and run wireshark to inspect captured frames.
-
-## MAC Addresses
-
-We get the interface config of the pod3-3 machine:
-
-```txt
-pod3-3 51 $ ifconfig -a
-eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
-        inet 128.10.25.213  netmask 255.255.255.0  broadcast 128.10.25.255
-        inet6 fe80::16b3:1fff:fe02:3e08  prefixlen 64  scopeid 0x20<link>
-        ether 14:b3:1f:02:3e:08  txqueuelen 1000  (Ethernet)
-        RX packets 893518410  bytes 1018870968114 (1.0 TB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 363304891  bytes 127058012388 (127.0 GB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-        device interrupt 16  memory 0xf7200000-f7220000
-
-lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
-        inet 127.0.0.1  netmask 255.0.0.0
-        inet6 ::1  prefixlen 128  scopeid 0x10<host>
-        loop  txqueuelen 1000  (Local Loopback)
-        RX packets 3279754  bytes 727661013 (727.6 MB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 3279754  bytes 727661013 (727.6 MB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-veth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
-        inet 192.168.1.1  netmask 255.255.255.0  broadcast 192.168.1.255
-        inet6 fe80::60b5:6dff:fea1:dbb  prefixlen 64  scopeid 0x20<link>
-        ether 62:b5:6d:a1:0d:bb  txqueuelen 1000  (Ethernet)
-        RX packets 1814  bytes 120758 (120.7 KB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 3478  bytes 461386 (461.3 KB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-```
-
-Thus, the MAC address of _veth0_ used by `mypingsrv` is `62:b5:6d:a1:0d:bb`.
-
-We get the virtual interface config of the pod3-3 machine:
-
-```txt
-pod3-3 52 $ veth 'ifconfig -a'
-lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
-        inet 127.0.0.1  netmask 255.0.0.0
-        inet6 ::1  prefixlen 128  scopeid 0x10<host>
-        loop  txqueuelen 1000  (Local Loopback)
-        RX packets 0  bytes 0 (0.0 B)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 0  bytes 0 (0.0 B)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-veth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
-        inet 192.168.1.2  netmask 255.255.255.0  broadcast 192.168.1.255
-        inet6 fe80::4c2:5fff:fe25:ea64  prefixlen 64  scopeid 0x20<link>
-        ether 06:c2:5f:25:ea:64  txqueuelen 1000  (Ethernet)
-        RX packets 3482  bytes 462238 (462.2 KB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 1814  bytes 120758 (120.7 KB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-```
-
-Thus, the MAC address of _veth0_ used by `mypingcli` is `06:c2:5f:25:ea:64`.
-
-## Traffic Logging
-
-We use `mypingcli` to interact with `mypingsrv`. The contents of `pingparam`
-are:
-
-- N: 5
-- T: 2
-- D: 1
-- S: 0
-
-We start the server with port number `22222` first with the following command.
-
-```sh
-./mypingsrv 192.168.1.1 22222
-```
-
-Then, we start to ping the server with the following command.
-
-```sh
-veth 'mypingcli 192.168.1.2 192.168.1.1 22222'
-```
-
-The following is the contents of `testlogfile` collected by `tcpdump`:
-
-```txt
-pod3-3 55 $ tcpdump -XX -n -r - < testlogfile
-reading from file -, link-type EN10MB (Ethernet)
-10:35:57.121253 IP 192.168.1.2.59727 > 192.168.1.1.22222: UDP, length 5
-	0x0000:  62b5 6da1 0dbb 06c2 5f25 ea64 0800 4500  b.m....._%.d..E.
-	0x0010:  0021 3ad5 4000 4011 7ca3 c0a8 0102 c0a8  .!:.@.@.|.......
-	0x0020:  0101 e94f 56ce 000d 8372 0000 0000 01    ...OV....r.....
-10:35:58.121470 IP 192.168.1.1.22222 > 192.168.1.2.59727: UDP, length 5
-	0x0000:  06c2 5f25 ea64 62b5 6da1 0dbb 0800 4500  .._%.db.m.....E.
-	0x0010:  0021 d963 4000 4011 de14 c0a8 0101 c0a8  .!.c@.@.........
-	0x0020:  0102 56ce e94f 000d 8372 0000 0000 01    ..V..O...r.....
-10:35:59.121321 IP 192.168.1.2.59727 > 192.168.1.1.22222: UDP, length 5
-	0x0000:  62b5 6da1 0dbb 06c2 5f25 ea64 0800 4500  b.m....._%.d..E.
-	0x0010:  0021 3b5b 4000 4011 7c1d c0a8 0102 c0a8  .!;[@.@.|.......
-	0x0020:  0101 e94f 56ce 000d 8372 0100 0000 01    ...OV....r.....
-10:36:00.121569 IP 192.168.1.1.22222 > 192.168.1.2.59727: UDP, length 5
-	0x0000:  06c2 5f25 ea64 62b5 6da1 0dbb 0800 4500  .._%.db.m.....E.
-	0x0010:  0021 db2e 4000 4011 dc49 c0a8 0101 c0a8  .!..@.@..I......
-	0x0020:  0102 56ce e94f 000d 8372 0100 0000 01    ..V..O...r.....
-10:36:01.121417 IP 192.168.1.2.59727 > 192.168.1.1.22222: UDP, length 5
-	0x0000:  62b5 6da1 0dbb 06c2 5f25 ea64 0800 4500  b.m....._%.d..E.
-	0x0010:  0021 3cb5 4000 4011 7ac3 c0a8 0102 c0a8  .!<.@.@.z.......
-	0x0020:  0101 e94f 56ce 000d 8372 0200 0000 01    ...OV....r.....
-10:36:02.121717 IP 192.168.1.1.22222 > 192.168.1.2.59727: UDP, length 5
-	0x0000:  06c2 5f25 ea64 62b5 6da1 0dbb 0800 4500  .._%.db.m.....E.
-	0x0010:  0021 dc8d 4000 4011 daea c0a8 0101 c0a8  .!..@.@.........
-	0x0020:  0102 56ce e94f 000d 8372 0200 0000 01    ..V..O...r.....
-10:36:02.230216 ARP, Request who-has 192.168.1.1 tell 192.168.1.2, length 28
-	0x0000:  62b5 6da1 0dbb 06c2 5f25 ea64 0806 0001  b.m....._%.d....
-	0x0010:  0800 0604 0001 06c2 5f25 ea64 c0a8 0102  ........_%.d....
-	0x0020:  0000 0000 0000 c0a8 0101                 ..........
-10:36:02.230267 ARP, Reply 192.168.1.1 is-at 62:b5:6d:a1:0d:bb, length 28
-	0x0000:  06c2 5f25 ea64 62b5 6da1 0dbb 0806 0001  .._%.db.m.......
-	0x0010:  0800 0604 0002 62b5 6da1 0dbb c0a8 0101  ......b.m.......
-	0x0020:  06c2 5f25 ea64 c0a8 0102                 .._%.d....
-10:36:03.121535 IP 192.168.1.2.59727 > 192.168.1.1.22222: UDP, length 5
-	0x0000:  62b5 6da1 0dbb 06c2 5f25 ea64 0800 4500  b.m....._%.d..E.
-	0x0010:  0021 3d1e 4000 4011 7a5a c0a8 0102 c0a8  .!=.@.@.zZ......
-	0x0020:  0101 e94f 56ce 000d 8372 0300 0000 01    ...OV....r.....
-10:36:03.254177 ARP, Request who-has 192.168.1.2 tell 192.168.1.1, length 28
-	0x0000:  06c2 5f25 ea64 62b5 6da1 0dbb 0806 0001  .._%.db.m.......
-	0x0010:  0800 0604 0001 62b5 6da1 0dbb c0a8 0101  ......b.m.......
-	0x0020:  0000 0000 0000 c0a8 0102                 ..........
-10:36:03.254200 ARP, Reply 192.168.1.2 is-at 06:c2:5f:25:ea:64, length 28
-	0x0000:  62b5 6da1 0dbb 06c2 5f25 ea64 0806 0001  b.m....._%.d....
-	0x0010:  0800 0604 0002 06c2 5f25 ea64 c0a8 0102  ........_%.d....
-	0x0020:  62b5 6da1 0dbb c0a8 0101                 b.m.......
-10:36:04.121810 IP 192.168.1.1.22222 > 192.168.1.2.59727: UDP, length 5
-	0x0000:  06c2 5f25 ea64 62b5 6da1 0dbb 0800 4500  .._%.db.m.....E.
-	0x0010:  0021 de50 4000 4011 d927 c0a8 0101 c0a8  .!.P@.@..'......
-	0x0020:  0102 56ce e94f 000d 8372 0300 0000 01    ..V..O...r.....
-```
-
-We ignore the ARP frames, focusing only on the IP packages. The first packets
-has the following contents:
-
-```txt
-62b5 6da1 0dbb 06c2 5f25 ea64 0800 4500
-0021 3ad5 4000 4011 7ca3 c0a8 0102 c0a8
-0101 e94f 56ce 000d 8372 0000 0000 01
-```
-
-### Ethernet Frame
-
-In the first packet, the first 14 bytes are the header of the Ethernet frame.
-Inside the header, the first 6 bytes represent the destination MAC address. In
-this pinging case, the target MAC address is server's address,
-`62:b5:6d:a1:0d:bb`.
-
-```txt
-62 B5 6D A1 0D BB
-```
-
-The next 6 bytes represent the source MAC address, which is the client's
-address, `06:c2:5f:25:ea:64`.
-
-```txt
-06 C2 5F 25 EA 64
-```
-
-According to the DIX (Ethernet II) spec, the next 4 bytes represent the type of
-the payload (EtherType). In our ping application, we only use IPv4. The
-EtherType of IPv4 is `0x0800`, which matches our experiment.
-
-```txt
-08 00
-```
-
-### IPv4 Packet
-
-The payload of the Ethernet frame is the IPv4 packet. The last 8 bytes are the
-source and destination IP addresses. Take the first Ethernet packet from the log
-for example,
-
-```txt
-C0 A8 01 02 # source IP address: 192.168.1.2 (client)
-C0 A8 01 01 # destination IP address: 192.168.1.1 (server)
-```
-
-We can see the IP addresses in the packet match the IP addresses we assigned to
-the `mypingsrv` and `mypingcli`.
-
-### UDP Packet
-
-The payload of IPv4 packet is the UDP packet. The type of the payload can be
-identified from the 10th byte in IPv4 header. The value of the byte is `0x11`
-representing the payload uses UDP. The first 4 bytes in UDP is the source and
-destination port numbers. Take the first Ethernet packet from the log for
-example,
-
-```txt
-E9 4F # source port number: 59727 (client automatically assigned by OS)
-56 CE # destination port number: 22222 (server)
-```
-
-We can see the destination port number in the packet matches the port number we
-assigned to the server with `mypingsrv`.
-
-The last 5 bytes store the content of our message. Take the first Ethernet
-packet from the log for example,
-
-```txt
-00	00	00	00	01
-```
-
-That matches our configuration from `pingparam.dat`. In the first ping, the
-first 4 bytes of the data is the message number, which is `0` in this case. The
-last byte of the data is the delay, which is `1` in this case. We can see that
-for each pinging (client to server and back), the message number increases 1 in
-big-endian and delay remain the same, which is the same as our implementation.
-
-```txt
-10:35:57.121253 IP 192.168.1.2.59727 > 192.168.1.1.22222:
-	0x002A:  0000 0000 01
-10:35:58.121470 IP 192.168.1.1.22222 > 192.168.1.2.59727:
-	0x002A:  0000 0000 01
-10:35:59.121321 IP 192.168.1.2.59727 > 192.168.1.1.22222:
-	0x002A:  0100 0000 01
-10:36:00.121569 IP 192.168.1.1.22222 > 192.168.1.2.59727:
-	0x002A:  0100 0000 01
-10:36:01.121417 IP 192.168.1.2.59727 > 192.168.1.1.22222:
-	0x002A:  0200 0000 01
-10:36:02.121717 IP 192.168.1.1.22222 > 192.168.1.2.59727:
-	0x002A:  0200 0000 01
-10:36:03.121535 IP 192.168.1.2.59727 > 192.168.1.1.22222:
-	0x002A:  0300 0000 01
-10:36:04.121810 IP 192.168.1.1.22222 > 192.168.1.2.59727:
-	0x002A:  0300 0000 01
-```
+Note that overall file transfer client/server performance is influenced by the
+particulars of both network I/O and disk I/O. In general, for file servers
+without specialized kernel support a rule of thumb is to perform disk I/O to
+read/write files in unit of a file systems block size. Try blocksize values 512,
+1024, 2048, 4096 for small (tens of KB) and large (tens of MB) files to evaluate
+performance. Larger blocksize values reduce the number system calls which
+improves disk I/O performance. In the case of write operations to network
+sockets, considering the payload size of the underlying LAN technologies to
+prevent fragmentation (we will discuss it under IP internetworking) can improve
+performance. In this problem, set the count argument of `write()` and `read()`
+to sockets to blocksize. When testing your file server app, make sure to verify
+that the requested file has been transferred correctly, for example, by using
+file checksums. Compare file transfer performance when server and client are
+located on two machines in the same lab (e.g., LWSN B148) or across two
+different labs (LWSN B148 and HAAS G050). Discuss your findings in `lab3.pdf`.
+Implement your file server app in a modular fashion and provide a Makefile in
+`v1/`. Include `README` under `v1/` that specifies the files and functions of
+your code, and a brief description of their roles. Henceforth lack of
+modularity, annotation, and clarity of code will incur 5% point penalty. Make
+sure to remove large files created for testing after tests are completed.

@@ -17,7 +17,13 @@
     "sockaddr.h": "c",
     "string.h": "c"
   },
-  "[json, jsonc, markdown]": {
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "prettier.proseWrap": "always"
