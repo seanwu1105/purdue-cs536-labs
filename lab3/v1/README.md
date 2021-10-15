@@ -82,64 +82,79 @@ have to be physically at a lab machine. If you prefer, you may install wireshark
 on a Windows, MacOS, or Linux machine, copy testlogfile to the machine and run
 wireshark to inspect captured frames.
 
-## Traffic Logging
+## MAC Addresses
 
-### With Hex Contents
+We get the interface config of the pod3-3 machine:
 
 ```txt
-pod3-3 54 $ tcpdump -XX -r - < testlogfile
-reading from file -, link-type EN10MB (Ethernet)
-10:35:57.121253 IP remote.59727 > host.22222: UDP, length 5
-	0x0000:  62b5 6da1 0dbb 06c2 5f25 ea64 0800 4500  b.m....._%.d..E.
-	0x0010:  0021 3ad5 4000 4011 7ca3 c0a8 0102 c0a8  .!:.@.@.|.......
-	0x0020:  0101 e94f 56ce 000d 8372 0000 0000 01    ...OV....r.....
-10:35:58.121470 IP host.22222 > remote.59727: UDP, length 5
-	0x0000:  06c2 5f25 ea64 62b5 6da1 0dbb 0800 4500  .._%.db.m.....E.
-	0x0010:  0021 d963 4000 4011 de14 c0a8 0101 c0a8  .!.c@.@.........
-	0x0020:  0102 56ce e94f 000d 8372 0000 0000 01    ..V..O...r.....
-10:35:59.121321 IP remote.59727 > host.22222: UDP, length 5
-	0x0000:  62b5 6da1 0dbb 06c2 5f25 ea64 0800 4500  b.m....._%.d..E.
-	0x0010:  0021 3b5b 4000 4011 7c1d c0a8 0102 c0a8  .!;[@.@.|.......
-	0x0020:  0101 e94f 56ce 000d 8372 0100 0000 01    ...OV....r.....
-10:36:00.121569 IP host.22222 > remote.59727: UDP, length 5
-	0x0000:  06c2 5f25 ea64 62b5 6da1 0dbb 0800 4500  .._%.db.m.....E.
-	0x0010:  0021 db2e 4000 4011 dc49 c0a8 0101 c0a8  .!..@.@..I......
-	0x0020:  0102 56ce e94f 000d 8372 0100 0000 01    ..V..O...r.....
-10:36:01.121417 IP remote.59727 > host.22222: UDP, length 5
-	0x0000:  62b5 6da1 0dbb 06c2 5f25 ea64 0800 4500  b.m....._%.d..E.
-	0x0010:  0021 3cb5 4000 4011 7ac3 c0a8 0102 c0a8  .!<.@.@.z.......
-	0x0020:  0101 e94f 56ce 000d 8372 0200 0000 01    ...OV....r.....
-10:36:02.121717 IP host.22222 > remote.59727: UDP, length 5
-	0x0000:  06c2 5f25 ea64 62b5 6da1 0dbb 0800 4500  .._%.db.m.....E.
-	0x0010:  0021 dc8d 4000 4011 daea c0a8 0101 c0a8  .!..@.@.........
-	0x0020:  0102 56ce e94f 000d 8372 0200 0000 01    ..V..O...r.....
-10:36:02.230216 ARP, Request who-has host tell remote, length 28
-	0x0000:  62b5 6da1 0dbb 06c2 5f25 ea64 0806 0001  b.m....._%.d....
-	0x0010:  0800 0604 0001 06c2 5f25 ea64 c0a8 0102  ........_%.d....
-	0x0020:  0000 0000 0000 c0a8 0101                 ..........
-10:36:02.230267 ARP, Reply host is-at 62:b5:6d:a1:0d:bb (oui Unknown), length 28
-	0x0000:  06c2 5f25 ea64 62b5 6da1 0dbb 0806 0001  .._%.db.m.......
-	0x0010:  0800 0604 0002 62b5 6da1 0dbb c0a8 0101  ......b.m.......
-	0x0020:  06c2 5f25 ea64 c0a8 0102                 .._%.d....
-10:36:03.121535 IP remote.59727 > host.22222: UDP, length 5
-	0x0000:  62b5 6da1 0dbb 06c2 5f25 ea64 0800 4500  b.m....._%.d..E.
-	0x0010:  0021 3d1e 4000 4011 7a5a c0a8 0102 c0a8  .!=.@.@.zZ......
-	0x0020:  0101 e94f 56ce 000d 8372 0300 0000 01    ...OV....r.....
-10:36:03.254177 ARP, Request who-has remote tell host, length 28
-	0x0000:  06c2 5f25 ea64 62b5 6da1 0dbb 0806 0001  .._%.db.m.......
-	0x0010:  0800 0604 0001 62b5 6da1 0dbb c0a8 0101  ......b.m.......
-	0x0020:  0000 0000 0000 c0a8 0102                 ..........
-10:36:03.254200 ARP, Reply remote is-at 06:c2:5f:25:ea:64 (oui Unknown), length 28
-	0x0000:  62b5 6da1 0dbb 06c2 5f25 ea64 0806 0001  b.m....._%.d....
-	0x0010:  0800 0604 0002 06c2 5f25 ea64 c0a8 0102  ........_%.d....
-	0x0020:  62b5 6da1 0dbb c0a8 0101                 b.m.......
-10:36:04.121810 IP host.22222 > remote.59727: UDP, length 5
-	0x0000:  06c2 5f25 ea64 62b5 6da1 0dbb 0800 4500  .._%.db.m.....E.
-	0x0010:  0021 de50 4000 4011 d927 c0a8 0101 c0a8  .!.P@.@..'......
-	0x0020:  0102 56ce e94f 000d 8372 0300 0000 01    ..V..O...r.....
+pod3-3 51 $ ifconfig -a
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 128.10.25.213  netmask 255.255.255.0  broadcast 128.10.25.255
+        inet6 fe80::16b3:1fff:fe02:3e08  prefixlen 64  scopeid 0x20<link>
+        ether 14:b3:1f:02:3e:08  txqueuelen 1000  (Ethernet)
+        RX packets 893518410  bytes 1018870968114 (1.0 TB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 363304891  bytes 127058012388 (127.0 GB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+        device interrupt 16  memory 0xf7200000-f7220000
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 3279754  bytes 727661013 (727.6 MB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 3279754  bytes 727661013 (727.6 MB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+veth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 192.168.1.1  netmask 255.255.255.0  broadcast 192.168.1.255
+        inet6 fe80::60b5:6dff:fea1:dbb  prefixlen 64  scopeid 0x20<link>
+        ether 62:b5:6d:a1:0d:bb  txqueuelen 1000  (Ethernet)
+        RX packets 1814  bytes 120758 (120.7 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 3478  bytes 461386 (461.3 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
 ```
 
-### Without Hostname Resolution
+Thus, the MAC address of _veth0_ used by `mypingsrv` is `62:b5:6d:a1:0d:bb`.
+
+We get the virtual interface config of the pod3-3 machine:
+
+```txt
+pod3-3 52 $ veth 'ifconfig -a'
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+veth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 192.168.1.2  netmask 255.255.255.0  broadcast 192.168.1.255
+        inet6 fe80::4c2:5fff:fe25:ea64  prefixlen 64  scopeid 0x20<link>
+        ether 06:c2:5f:25:ea:64  txqueuelen 1000  (Ethernet)
+        RX packets 3482  bytes 462238 (462.2 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 1814  bytes 120758 (120.7 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+```
+
+Thus, the MAC address of _veth0_ used by `mypingcli` is `06:c2:5f:25:ea:64`.
+
+## Traffic Logging
+
+We use `mypingcli` to interact with `mypingsrv`. The contents of `pingparam`
+are:
+
+- N: 5
+- T: 2
+- D: 1
+- S: 0
+
+The following is the contents of `testlogfile` collected by `tcpdump`:
 
 ```txt
 pod3-3 55 $ tcpdump -XX -n -r - < testlogfile
@@ -194,58 +209,34 @@ reading from file -, link-type EN10MB (Ethernet)
 	0x0020:  0102 56ce e94f 000d 8372 0300 0000 01    ..V..O...r.....
 ```
 
-## Pod3-3 MAC Addresses
+We ignore the ARP frames, focusing only on the IP packages. The first packets
+has the following contents:
 
 ```txt
-pod3-3 51 $ ifconfig -a
-eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
-        inet 128.10.25.213  netmask 255.255.255.0  broadcast 128.10.25.255
-        inet6 fe80::16b3:1fff:fe02:3e08  prefixlen 64  scopeid 0x20<link>
-        ether 14:b3:1f:02:3e:08  txqueuelen 1000  (Ethernet)
-        RX packets 893518410  bytes 1018870968114 (1.0 TB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 363304891  bytes 127058012388 (127.0 GB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-        device interrupt 16  memory 0xf7200000-f7220000
-
-lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
-        inet 127.0.0.1  netmask 255.0.0.0
-        inet6 ::1  prefixlen 128  scopeid 0x10<host>
-        loop  txqueuelen 1000  (Local Loopback)
-        RX packets 3279754  bytes 727661013 (727.6 MB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 3279754  bytes 727661013 (727.6 MB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
-
-veth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
-        inet 192.168.1.1  netmask 255.255.255.0  broadcast 192.168.1.255
-        inet6 fe80::60b5:6dff:fea1:dbb  prefixlen 64  scopeid 0x20<link>
-        ether 62:b5:6d:a1:0d:bb  txqueuelen 1000  (Ethernet)
-        RX packets 1814  bytes 120758 (120.7 KB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 3478  bytes 461386 (461.3 KB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+62b5 6da1 0dbb 06c2 5f25 ea64 0800 4500
+0021 3ad5 4000 4011 7ca3 c0a8 0102 c0a8
+0101 e94f 56ce 000d 8372 0000 0000 01
 ```
 
-## veth MAC Addresses
+The first 14 bytes are the header of the Ethernet frame. Inside the header, the
+first 6 bytes represent the destination MAC address. In this pinging case, the
+target MAC address is server's address, `62:b5:6d:a1:0d:bb`.
 
 ```txt
-pod3-3 52 $ veth 'ifconfig -a'
-lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
-        inet 127.0.0.1  netmask 255.0.0.0
-        inet6 ::1  prefixlen 128  scopeid 0x10<host>
-        loop  txqueuelen 1000  (Local Loopback)
-        RX packets 0  bytes 0 (0.0 B)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 0  bytes 0 (0.0 B)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+62 B5 6D A1 0D BB
+```
 
-veth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
-        inet 192.168.1.2  netmask 255.255.255.0  broadcast 192.168.1.255
-        inet6 fe80::4c2:5fff:fe25:ea64  prefixlen 64  scopeid 0x20<link>
-        ether 06:c2:5f:25:ea:64  txqueuelen 1000  (Ethernet)
-        RX packets 3482  bytes 462238 (462.2 KB)
-        RX errors 0  dropped 0  overruns 0  frame 0
-        TX packets 1814  bytes 120758 (120.7 KB)
-        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+The next 6 bytes represent the source MAC address, which is the client's
+address, `06:c2:5f:25:ea:64`.
+
+```txt
+06 C2 5F 25 EA 64
+```
+
+According to the DIX (Ethernet II) spec, the next 4 bytes represent the type of
+the payload (EtherType). In our ping application, we only use IPv4. The
+EtherType of IPv4 is `0x0800`, which matches our experiment.
+
+```txt
+08 00
 ```
