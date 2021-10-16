@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define REQUIRED_ARGC 6
+#define REQUIRED_ARGC 5
 
 typedef struct
 {
@@ -27,15 +27,15 @@ int parse_args(int argc, char *argv[], struct addrinfo **server_info,
 
     int status;
 
-    if (status =
-            build_addrinfo(server_info, argv[1], argv[2], SOCK_STREAM) != 0)
+    if ((status = build_addrinfo(server_info, argv[1], argv[2], SOCK_STREAM)) !=
+        0)
         return status;
 
-    long long secret_key = strtoull(argv[4], NULL, 0);
-    if (status = check_secret_key(secret_key) != 0) return status;
+    long long secret_key = strtoull(argv[3], NULL, 0);
+    if ((status = check_secret_key(secret_key) != 0)) return status;
     config->secret_key = (uint16_t)secret_key;
 
-    config->blocksize_byte = strtoul(argv[5], NULL, 0);
+    config->blocksize_byte = strtoul(argv[4], NULL, 0);
 
     return 0;
 }

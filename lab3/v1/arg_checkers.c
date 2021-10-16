@@ -16,7 +16,7 @@ int check_filename(const char *const filename)
     }
 
     char c;
-    char *s = filename;
+    const char *s = filename;
     while ((c = *s) && isalpha(c))
         s++;
     if (*s != '\0')

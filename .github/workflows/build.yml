@@ -61,3 +61,15 @@ jobs:
 
       - name: Make
         run: make
+
+  lab3_v1:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab3/v1/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Make
+        run: make
