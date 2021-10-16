@@ -2,8 +2,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <stdio.h>
-
 void encode_request(const char *const filename, const uint16_t secret_key,
                     uint8_t *const message)
 {

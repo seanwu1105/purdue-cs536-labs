@@ -80,8 +80,6 @@ ssize_t read_command(const int sockfd_full, char *command)
 
 int run()
 {
-    int status;
-
     while (1)
     {
         // accept connection
@@ -92,7 +90,7 @@ int run()
                  accept(sockfd_half, &client_addr, &client_addr_len)) == -1)
         {
             perror("accept");
-            return -1;
+            continue;
         }
 
         if (sanitize_client_addr(&client_addr) == -1) continue;
@@ -143,7 +141,8 @@ int run()
         else
         {
             // parent code
-            waitpid(k, &status, 0);
+            int status;
+            if (waitpid(k, &status, 0) == -1) perror("waitpid");
 
             // close socket (full)
             if (close(sockfd_full) == -1)

@@ -21,7 +21,8 @@ int read_config(Config *const config)
     }
 
     char content[BUFFER_SIZE];
-    const size_t bytes_read = fread(content, sizeof(char), BUFFER_SIZE, file);
+    const size_t bytes_read =
+        fread(content, sizeof(char), sizeof(content), file);
     fclose(file);
     if (bytes_read == 0) return -1;
 
