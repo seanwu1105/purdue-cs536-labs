@@ -15,7 +15,8 @@
     "socket_utils.h": "c",
     "parse_addrinfo_arg.h": "c",
     "sockaddr.h": "c",
-    "string.h": "c"
+    "string.h": "c",
+    "arg_checkers.h": "c"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
