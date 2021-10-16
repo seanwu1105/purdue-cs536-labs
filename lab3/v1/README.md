@@ -63,3 +63,11 @@ Implement your file server app in a modular fashion and provide a Makefile in
 your code, and a brief description of their roles. Henceforth lack of
 modularity, annotation, and clarity of code will incur 5% point penalty. Make
 sure to remove large files created for testing after tests are completed.
+
+## Getting Started
+
+Use `fallocate` to create test files.
+
+```sh
+fallocate -l 1K ./test
+```

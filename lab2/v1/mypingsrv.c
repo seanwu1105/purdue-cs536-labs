@@ -32,9 +32,9 @@ int feedback(const struct sockaddr target_addr, const int32_t id,
 {
     sleep(delay);
 
-    uint8_t message[MESSAGE_LEN];
+    uint8_t message[MESSAGE_SIZE];
     encode_message(id, delay, message);
-    if (sendto(sockfd, message, MESSAGE_LEN, 0, &target_addr,
+    if (sendto(sockfd, message, MESSAGE_SIZE, 0, &target_addr,
                sizeof(target_addr)) < 0)
     {
         perror("sendto");
@@ -45,7 +45,7 @@ int feedback(const struct sockaddr target_addr, const int32_t id,
 
 int run()
 {
-    uint8_t message[MESSAGE_LEN];
+    uint8_t message[MESSAGE_SIZE];
     struct sockaddr originating_addr;
     socklen_t originating_addr_len = sizeof(originating_addr);
 

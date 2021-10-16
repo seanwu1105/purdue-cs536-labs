@@ -1,11 +1,9 @@
+#include "arg_checkers.h"
+#include "request_codec.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define MAX_FILENAME_LEN 8
-#define MIN_SECRET_KEY 0
-#define MAX_SECRET_KEY 65535
 
 int check_filename(const char *const filename)
 {

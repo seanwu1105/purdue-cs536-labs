@@ -1,9 +1,9 @@
-#include <stdint.h>
-
 #if !defined(_MESSAGE_CODEC_H_)
 #define _MESSAGE_CODEC_H_
 
-#define MESSAGE_LEN 5
+#include <stdint.h>
+
+#define MESSAGE_SIZE 5
 
 void encode_message(const int32_t id, const uint8_t control,
                     uint8_t *const message);

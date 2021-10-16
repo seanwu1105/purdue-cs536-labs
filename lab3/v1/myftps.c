@@ -40,6 +40,9 @@ int parse_args(int argc, char *argv[], struct addrinfo **server_info,
     return 0;
 }
 
+// checkers: source IP, secret key, filename convention
+// ignore: checkers fail, toss coin, file exists
+
 int main(int argc, char *argv[])
 {
     struct addrinfo *server_info;

@@ -16,14 +16,14 @@ int read_config(Config *const config)
     FILE *file = fopen(CONFIG_FILENAME, "r");
     if (file == NULL)
     {
-        fprintf(stderr, "cannot open config.\n");
+        perror("fopen");
         return -1;
     }
 
     char content[BUFFER_SIZE];
-    const ssize_t read_bytes = fread(content, 1, BUFFER_SIZE, file);
+    const size_t bytes_read = fread(content, sizeof(char), BUFFER_SIZE, file);
     fclose(file);
-    if (read_bytes <= 0) return -1;
+    if (bytes_read == 0) return -1;
 
     const char *val = strtok(content, "  \t\n");
     config->num_packages = (unsigned short)strtoul(val, NULL, 0);

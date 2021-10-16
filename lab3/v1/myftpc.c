@@ -1,5 +1,7 @@
 #include "arg_checkers.h"
+#include "request_codec.h"
 #include "socket_utils.h"
+#include <errno.h>
 #include <netdb.h>
 #include <signal.h>
 #include <stdint.h>
@@ -8,6 +10,7 @@
 #include <unistd.h>
 
 #define REQUIRED_ARGC 6
+#define TIMEOUT_SEC 2
 
 int sockfd = -1;
 
@@ -25,8 +28,6 @@ static void sigint_handler(int _)
     tear_down();
     exit(EXIT_SUCCESS);
 }
-
-static void sigalrm_handler(int _) { return; }
 
 typedef struct
 {
@@ -65,8 +66,63 @@ int parse_args(int argc, char *argv[], struct addrinfo **server_info,
     return 0;
 }
 
+int fetch_and_save_file(const Config *const config)
+{
+    // Read response from server
+    size_t total_bytes_read = 0;
+    uint8_t buffer[config->blocksize_byte];
+    ssize_t bytes_read;
+    while (bytes_read = read(sockfd, buffer, sizeof(buffer)), bytes_read > 0)
+    {
+        // write into disk
+        // TODO
+        total_bytes_read += bytes_read;
+        printf("total read: %lu\n", total_bytes_read);
+    }
+
+    if (bytes_read < 0)
+    {
+        perror("read");
+        return -1;
+    }
+
+    return total_bytes_read;
+}
+
 int run(const struct addrinfo *const server_info, const Config *const config)
 {
+    // Create socket
+    if ((sockfd = create_socket_with_first_usable_addr(server_info)) == -1)
+        return -1;
+
+    // Connect to server
+    if (connect(sockfd, server_info->ai_addr, server_info->ai_addrlen) == -1)
+    {
+        perror("connect");
+        return -1;
+    }
+
+    // Request file
+    int8_t request[REQUEST_SIZE];
+    encode_request(config->filename, config->secret_key, request);
+    if (write(sockfd, request, sizeof(request)) == -1)
+    {
+        perror("write");
+        return -1;
+    }
+
+    // Fetch and save file
+    int total_bytes_read = fetch_and_save_file(config);
+
+    // Close socket
+    if (close(sockfd) != 0)
+    {
+        perror("close");
+        return -1;
+    }
+    sockfd = -1;
+
+    if (total_bytes_read < 0) return -1;
     return 0;
 }
 
@@ -74,8 +130,6 @@ int main(int argc, char *argv[])
 {
     const struct sigaction sigint_action = {.sa_handler = sigint_handler};
     sigaction(SIGINT, &sigint_action, NULL);
-    const struct sigaction sigalrm_action = {.sa_handler = sigalrm_handler};
-    sigaction(SIGALRM, &sigalrm_action, NULL);
 
     struct addrinfo *server_info;
     Config config;

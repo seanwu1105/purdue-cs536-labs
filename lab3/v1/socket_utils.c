@@ -18,3 +18,51 @@ int build_addrinfo(struct addrinfo **info, const char *const ip,
 
     return status;
 }
+
+int create_socket_with_first_usable_addr(const struct addrinfo *const info)
+{
+    int fd = -1;
+    const struct addrinfo *p;
+
+    for (p = info; p != NULL; p = p->ai_next)
+    {
+        if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
+        {
+            perror("socket (attempt)");
+            continue;
+        }
+
+        break; // break when find first usable result
+    }
+
+    if (p == NULL)
+    {
+        fprintf(stderr, "failed to create socket.\n");
+        return -1;
+    }
+    return fd;
+}
+
+int bind_socket_with_first_usable_addr(const struct addrinfo *const info,
+                                       const int sockfd)
+{
+    const struct addrinfo *p;
+    for (p = info; p != NULL; p = p->ai_next)
+    {
+
+        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1)
+        {
+            perror("bind (attempt)");
+            continue;
+        }
+
+        break;
+    }
+
+    if (p == NULL)
+    {
+        fprintf(stderr, "failed to bind socket.\n");
+        return -1;
+    }
+    return 0;
+}

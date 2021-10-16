@@ -34,7 +34,7 @@ static void sigalrm_handler(int _) { return; }
 int send_pinging(const struct sockaddr *target_addr, const int32_t id,
                  const uint8_t delay)
 {
-    uint8_t message[MESSAGE_LEN];
+    uint8_t message[MESSAGE_SIZE];
     encode_message(id, delay, message);
     if (sendto(sockfd, message, sizeof(message), 0, target_addr,
                sizeof(*target_addr)) == -1)
@@ -47,7 +47,7 @@ int send_pinging(const struct sockaddr *target_addr, const int32_t id,
 
 int receive_feedback(int32_t *const id)
 {
-    uint8_t message[MESSAGE_LEN];
+    uint8_t message[MESSAGE_SIZE];
 
     const ssize_t message_len =
         recvfrom(sockfd, message, sizeof(message), 0, NULL, NULL);
