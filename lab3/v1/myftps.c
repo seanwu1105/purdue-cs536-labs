@@ -76,7 +76,7 @@ int sanitize_client_addr(const struct sockaddr *const addr)
         if (strncmp(ipstr, allowed_ips[i], strlen(allowed_ips[i])) == 0)
             return 0;
 
-    fprintf(stderr, "client address denied: %s", ipstr);
+    fprintf(stderr, "Client address denied: %s\n", ipstr);
     return -1;
 }
 
@@ -142,12 +142,11 @@ int run(const Config *const config)
             continue;
         }
 
-        // TODO: Enable when tested on lab machines.
-        // if (sanitize_client_addr(&client_addr) == -1)
-        // {
-        //     close(sockfd_full);
-        //     continue;
-        // }
+        if (sanitize_client_addr(&client_addr) == -1)
+        {
+            close(sockfd_full);
+            continue;
+        }
 
         uint16_t secret_key;
         char filename[MAX_FILENAME_LEN];

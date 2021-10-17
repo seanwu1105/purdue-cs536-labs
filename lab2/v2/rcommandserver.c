@@ -38,7 +38,7 @@ int sanitize_client_addr(const struct sockaddr *const addr)
         if (strncmp(ipstr, allowed_ips[i], strlen(allowed_ips[i])) == 0)
             return 0;
 
-    fprintf(stderr, "client address denied: %s", ipstr);
+    fprintf(stderr, "client address denied: %s\n", ipstr);
     return -1;
 }
 
