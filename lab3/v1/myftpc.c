@@ -123,11 +123,13 @@ void print_statistics(ssize_t total_bytes_read, struct timeval start_time)
 
     struct timeval end_time;
     gettimeofday(&end_time, NULL);
-    double completion_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
-                             (end_time.tv_usec - start_time.tv_usec) / 1000.0;
-    fprintf(stdout, "Completion time: %.3lf ms\n", completion_time);
+    double completion_time_millis =
+        (end_time.tv_sec - start_time.tv_sec) * 1000 +
+        (end_time.tv_usec - start_time.tv_usec) / 1000.0;
+    fprintf(stdout, "Completion time: %.3lf ms\n", completion_time_millis);
 
-    fprintf(stdout, "Throughput: %.3lf\n", total_bytes_read / completion_time);
+    fprintf(stdout, "Throughput: %.3lf byte/ms\n",
+            total_bytes_read / completion_time_millis);
 }
 
 int run(const struct addrinfo *const server_info, const Config *const config)
