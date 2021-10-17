@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #define REQUIRED_ARGC 6
@@ -83,7 +84,7 @@ int append_file(const char *const filename, const uint8_t *const data,
     return 0;
 }
 
-int fetch_and_save_file(const Config *const config)
+ssize_t fetch_and_save_file(const Config *const config)
 {
     // Check if file exists
     if (access(config->filename, F_OK) == 0)
@@ -112,6 +113,19 @@ int fetch_and_save_file(const Config *const config)
     return total_bytes_read;
 }
 
+void print_statistics(ssize_t total_bytes_read, struct timeval start_time)
+{
+    fprintf(stdout, "Total fetched: %ld bytes\n", total_bytes_read);
+
+    struct timeval end_time;
+    gettimeofday(&end_time, NULL);
+    double completion_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
+                             (end_time.tv_usec - start_time.tv_usec) / 1000.0;
+    fprintf(stdout, "Completion time: %.3lf ms\n", completion_time);
+
+    fprintf(stdout, "Throughput: %.3lf\n", total_bytes_read / completion_time);
+}
+
 int run(const struct addrinfo *const server_info, const Config *const config)
 {
     // Create socket
@@ -126,6 +140,9 @@ int run(const struct addrinfo *const server_info, const Config *const config)
     }
 
     // Request file
+    struct timeval start_time;
+    gettimeofday(&start_time, NULL);
+
     uint8_t request[REQUEST_SIZE];
     encode_request(config->filename, config->secret_key, request);
     if (write(sockfd, request, sizeof(request)) == -1)
@@ -135,13 +152,15 @@ int run(const struct addrinfo *const server_info, const Config *const config)
     }
 
     // Fetch and save file
-    int total_bytes_read = fetch_and_save_file(config);
+    ssize_t total_bytes_read = fetch_and_save_file(config);
 
     close(sockfd);
     sockfd = -1;
 
     if (total_bytes_read < 0) return -1;
-    fprintf(stdout, "Total bytes fetched: %lu\n", total_bytes_read);
+
+    print_statistics(total_bytes_read, start_time);
+
     return 0;
 }
 
