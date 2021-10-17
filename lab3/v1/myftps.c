@@ -9,20 +9,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <wait.h>
 
 #define REQUIRED_ARGC 5
 #define MAX_LISTEN_NUM 5
 
 int sockfd_half = -1;
+int sockfd_full = -1;
 
 void tear_down()
 {
-    if (close(sockfd_half) == -1)
-    {
-        perror("close");
-        exit(EXIT_FAILURE);
-    }
+    close(sockfd_half);
+    close(sockfd_full);
 }
 
 static void sigint_handler(int _)
@@ -120,11 +117,7 @@ int send_file(int sockfd_full, const char *const filename,
         }
     }
 
-    if (fclose(file) == -1)
-    {
-        perror("fclose");
-        return -1;
-    }
+    fclose(file);
 
     if (ferror(file))
     {
@@ -140,7 +133,6 @@ int run(const Config *const config)
     while (1)
     {
         // Accept connection
-        int sockfd_full = -1;
         struct sockaddr client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
         if ((sockfd_full =
@@ -153,7 +145,7 @@ int run(const Config *const config)
         // TODO: Enable when tested on lab machines.
         // if (sanitize_client_addr(&client_addr) == -1)
         // {
-        //     if (close(sockfd_full) == -1) perror("close");
+        //     close(sockfd_full);
         //     continue;
         // }
 
@@ -161,7 +153,7 @@ int run(const Config *const config)
         char filename[MAX_FILENAME_LEN];
         if (read_request(sockfd_full, filename, &secret_key) != 0)
         {
-            if (close(sockfd_full) == -1) perror("close");
+            close(sockfd_full);
             continue;
         }
 
@@ -169,21 +161,13 @@ int run(const Config *const config)
         {
             fprintf(stderr, "Secret key mismatch: %hu != %hu\n",
                     config->secret_key, secret_key);
-            if (close(sockfd_full) == -1) perror("close");
+            close(sockfd_full);
             continue;
         }
 
         if (check_filename(filename) != 0)
         {
-            if (close(sockfd_full) == -1) perror("close");
-            continue;
-        }
-
-        int toss_coin = rand() % 2;
-        if (toss_coin == 0) // Ignore command
-        {
-            fprintf(stderr, "Toss a coin and ignore request\n");
-            if (close(sockfd_full) == -1) perror("close");
+            close(sockfd_full);
             continue;
         }
 
@@ -191,7 +175,15 @@ int run(const Config *const config)
         if (access(filename, F_OK) == -1)
         {
             perror("access");
-            if (close(sockfd_full) == -1) perror("close");
+            close(sockfd_full);
+            continue;
+        }
+
+        int toss_coin = rand() % 2;
+        if (toss_coin == 0) // Ignore command
+        {
+            fprintf(stderr, "Toss a coin and ignore request\n");
+            close(sockfd_full);
             continue;
         }
 
@@ -201,15 +193,12 @@ int run(const Config *const config)
         {
             // Child process
             send_file(sockfd_full, filename, config->blocksize_byte);
+            close(sockfd_full);
+            printf("closed.\n");
             exit(EXIT_SUCCESS);
         }
         else
-        {
-            // Parent process
-            int status;
-            if (waitpid(k, &status, 0) == -1) perror("waitpid");
-            if (close(sockfd_full) == -1) perror("close");
-        }
+            close(sockfd_full);
     }
 
     return 0;
@@ -225,18 +214,22 @@ int main(int argc, char *argv[])
 
     if (parse_args(argc, argv, &info, &config) != 0) return -1;
 
-    // bind to the socket
+    // Create half-associate socket
+    if ((sockfd_half = create_socket_with_first_usable_addr(info)) == -1)
+        return -1;
+
+    // Bind to the socket
     if ((bind_socket_with_first_usable_addr(info, sockfd_half)) == -1)
     {
-        if (close(sockfd_half) == -1) perror("close");
+        close(sockfd_half);
         return -1;
     }
 
-    // listen to the socket
+    // Listen to the socket
     if ((listen(sockfd_half, MAX_LISTEN_NUM)) == -1)
     {
         perror("listen");
-        if (close(sockfd_half) == -1) perror("close");
+        close(sockfd_half);
         return -1;
     }
 

@@ -14,14 +14,12 @@
 #define MAX_LISTEN_NUM 5
 
 int sockfd_half = -1;
+int sockfd_full = -1;
 
 void tear_down()
 {
-    if (close(sockfd_half) == -1)
-    {
-        perror("close");
-        exit(EXIT_FAILURE);
-    }
+    close(sockfd_half);
+    close(sockfd_full);
 }
 
 int sanitize_client_addr(const struct sockaddr *const addr)
@@ -83,7 +81,6 @@ int run()
     while (1)
     {
         // accept connection
-        int sockfd_full = -1;
         struct sockaddr client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
         if ((sockfd_full =

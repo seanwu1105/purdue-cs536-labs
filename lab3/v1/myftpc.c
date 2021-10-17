@@ -14,14 +14,7 @@
 
 int sockfd = -1;
 
-void tear_down()
-{
-    if (sockfd != -1 && close(sockfd) == -1)
-    {
-        perror("close");
-        exit(EXIT_FAILURE);
-    }
-}
+void tear_down() { close(sockfd); }
 
 static void sigint_handler(int _)
 {
@@ -103,7 +96,7 @@ int run(const struct addrinfo *const server_info, const Config *const config)
     }
 
     // Request file
-    int8_t request[REQUEST_SIZE];
+    uint8_t request[REQUEST_SIZE];
     encode_request(config->filename, config->secret_key, request);
     if (write(sockfd, request, sizeof(request)) == -1)
     {
@@ -114,12 +107,7 @@ int run(const struct addrinfo *const server_info, const Config *const config)
     // Fetch and save file
     int total_bytes_read = fetch_and_save_file(config);
 
-    // Close socket
-    if (close(sockfd) != 0)
-    {
-        perror("close");
-        return -1;
-    }
+    close(sockfd);
     sockfd = -1;
 
     if (total_bytes_read < 0) return -1;
