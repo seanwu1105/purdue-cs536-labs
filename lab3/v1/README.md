@@ -69,5 +69,11 @@ sure to remove large files created for testing after tests are completed.
 Use `fallocate` to create test files.
 
 ```sh
-fallocate -l 1K ./test
+fallocate -l 10M ./test
+```
+
+If the `fallocate` is not supported, use `truncate` instead.
+
+```sh
+truncate -s 10M ./test
 ```
