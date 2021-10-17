@@ -59,18 +59,48 @@ int parse_args(int argc, char *argv[], struct addrinfo **server_info,
     return 0;
 }
 
+int append_file(const char *const filename, const uint8_t *const data,
+                const size_t data_size)
+{
+    // TODO: use filename instead
+    FILE *file = fopen("test_received", "a");
+    if (file == NULL)
+    {
+        perror("fopen");
+        return -1;
+    }
+
+    fwrite(data, sizeof(uint8_t), data_size, file);
+
+    fclose(file);
+
+    if (ferror(file))
+    {
+        perror("fwrite");
+        return -1;
+    }
+
+    return 0;
+}
+
 int fetch_and_save_file(const Config *const config)
 {
+    // Check if file exists
+    if (access(config->filename, F_OK) == 0)
+    {
+        fprintf(stdout, "File already exists: %s\n", config->filename);
+        return -1;
+    }
+
     // Read response from server
     size_t total_bytes_read = 0;
     uint8_t buffer[config->blocksize_byte];
     ssize_t bytes_read;
     while (bytes_read = read(sockfd, buffer, sizeof(buffer)), bytes_read > 0)
     {
-        // write into disk
-        // TODO
+        // Write into disk
+        append_file(config->filename, buffer, bytes_read);
         total_bytes_read += bytes_read;
-        printf("total read: %lu\n", total_bytes_read);
     }
 
     if (bytes_read < 0)
@@ -111,6 +141,7 @@ int run(const struct addrinfo *const server_info, const Config *const config)
     sockfd = -1;
 
     if (total_bytes_read < 0) return -1;
+    fprintf(stdout, "Total bytes fetched: %lu\n", total_bytes_read);
     return 0;
 }
 

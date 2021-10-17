@@ -72,7 +72,6 @@ int ping(const struct sockaddr *target_addr, const int32_t id,
     struct timeval start_time;
     gettimeofday(&start_time, NULL);
 
-    // printf("send MID: %d\t", id);
     fflush(stdout);
     if (send_pinging(target_addr, id, server_delay) == -1) return -1;
 
@@ -83,10 +82,7 @@ int ping(const struct sockaddr *target_addr, const int32_t id,
         if (receive_feedback(&feedback_id) == -1)
         {
             if (errno == EINTR) // timeout
-            {
-                // printf("timeout\n");
                 break;
-            }
             return -1;
         }
         if (feedback_id == id)

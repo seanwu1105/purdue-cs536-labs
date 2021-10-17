@@ -1,9 +1,5 @@
 # Problem 1 [120 pts]
 
-## TODO
-
-- TIMER LOGIC!
-
 Implement an application layer ping client/server using datagram sockets
 (`SOCK_DGRAM`) that allows a client, `mypingcli`, to check if the ping server,
 `mypingsrv`, is running on a remote host, as well as estimate RTT (round-trip

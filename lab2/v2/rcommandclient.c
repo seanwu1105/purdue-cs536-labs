@@ -62,11 +62,7 @@ int attempt_write_and_read(const char *command)
 
         if (result_len == -1)
         {
-            if (errno == EINTR)
-            {
-                // printf("timeout\n");
-                continue;
-            }
+            if (errno == EINTR) continue;
             return -1;
         }
     }

@@ -194,7 +194,6 @@ int run(const Config *const config)
             // Child process
             send_file(sockfd_full, filename, config->blocksize_byte);
             close(sockfd_full);
-            printf("closed.\n");
             exit(EXIT_SUCCESS);
         }
         else
