@@ -128,7 +128,7 @@ void print_statistics(ssize_t total_bytes_read, struct timeval start_time)
         (end_time.tv_usec - start_time.tv_usec) / 1000.0;
     fprintf(stdout, "Completion time: %.3lf ms\n", completion_time_millis);
 
-    fprintf(stdout, "Throughput: %.3lf byte/ms\n",
+    fprintf(stdout, "Throughput: %.3lf bytes/ms\n",
             total_bytes_read / completion_time_millis);
 }
 
