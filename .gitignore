@@ -140,3 +140,4 @@ Temporary Items
 # Project
 try.*
 *.bin
+*.html
