@@ -63,8 +63,7 @@ int parse_args(int argc, char *argv[], struct addrinfo **server_info,
 int append_file(const char *const filename, const uint8_t *const data,
                 const size_t data_size)
 {
-    // TODO: use filename instead
-    FILE *file = fopen("test_received", "a");
+    FILE *file = fopen(filename, "a");
     if (file == NULL)
     {
         perror("fopen");
