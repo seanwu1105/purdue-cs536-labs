@@ -158,6 +158,16 @@ data structure used by both client and server.
 The following is the statistics of file transmission between 2 machines in same
 lab.
 
+Environment:
+
+- Blocksize: 1024 bytes
+- Same lab
+  - Server on: `amber05.cs.purdue.edu` (`128.10.12.135`)
+  - Client on: `amber06.cs.purdue.edu` (`128.10.112.136`)
+- Different labs
+  - Server on: `amber05.cs.purdue.edu` (`128.10.12.135`)
+  - Client on: `pod3-3.cs.purdue.edu` (`128.10.25.213`)
+
 | file size (bytes) | same-lab completion time (ms) | same-lab throughput (bytes/ms) | different-labs completion time (ms) | different-labs throughput (bytes/ms) |
 | ----------------- | ----------------------------- | ------------------------------ | ----------------------------------- | ------------------------------------ |
 | 1K                | 2.195                         | 466.515                        | 4.235                               | 241.795                              |
@@ -204,10 +214,20 @@ involved, which causes higher nondeterministic overhead. Finally, the throughput
 for small files is relatively low as the overtime dominate the completion time
 for these cases.
 
+There is another big factor for the completion time and throughput: network file
+system. All lab machines use network file system to access the user data. Thus,
+if the file system is busy or the connection is heavily loaded, the throughput
+in the statistics above will decreases significantly.
+
 ### Blocksize
 
 The following is the statistics of file transmission in different blocksizes and
 file sizes.
+
+Environment:
+
+- Server on: `amber05.cs.purdue.edu` (`128.10.112.135`)
+- Client on: `amber06.cs.purdue.edu` (`128.10.112.136`)
 
 | blocksize (bytes) | 64K bytes file throughput (bytes/ms) | 64M bytes file throughput (bytes/ms) |
 | ----------------- | ------------------------------------ | ------------------------------------ |
@@ -224,3 +244,6 @@ The following is the visualization of above data.
 We can see that the throughput is heavily affected by the blocksize. The
 blocksize decides how many times a series of system calls need to be invoked.
 Thus, high blocksize can greatly reduce the overhead of socket I/O and disk I/O.
+
+The load of network file system is still a big factor for above statistics. Any
+network congestion would heavily impact the throughput.
