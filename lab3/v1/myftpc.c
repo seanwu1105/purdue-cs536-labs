@@ -116,6 +116,11 @@ void print_statistics(ssize_t total_bytes_read, struct timeval start_time)
 {
     fprintf(stdout, "Total fetched: %ld bytes\n", total_bytes_read);
 
+    if (total_bytes_read == 0)
+        fprintf(
+            stderr,
+            "No data received. See message from server to get the reason.\n");
+
     struct timeval end_time;
     gettimeofday(&end_time, NULL);
     double completion_time = (end_time.tv_sec - start_time.tv_sec) * 1000 +
