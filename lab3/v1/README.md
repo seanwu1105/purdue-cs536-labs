@@ -66,14 +66,161 @@ sure to remove large files created for testing after tests are completed.
 
 ## Getting Started
 
+Build `myftps` and `myftpc` with the `make` command in the `/v1` directory.
+
+```sh
+make
+```
+
+Start the server first to get ready for accepting remote commands.
+
+```sh
+./myftps <server-ip> <server-port> <filename> <secret-key> <blocksize-byte>
+```
+
+After the server is running, start the new client in another machine.
+
+```sh
+./myftpc <server-ip> <server-port> <secret-key> <blocksize-byte>
+```
+
+To stop a running ftp server or client, send `SIGINT` with <kbd>ctrl</kbd> +
+<kbd>c</kbd> on Linux.
+
+## Create Dummy Test Files
+
 Use `fallocate` to create test files.
 
 ```sh
 fallocate -l 10M ./test
 ```
 
-If the `fallocate` is not supported, use `truncate` instead.
+If the `fallocate` is not supported on the file system, use `truncate` instead.
 
 ```sh
 truncate -s 10M ./test
 ```
+
+## Security Protection
+
+The server will only accept the client from `128.10.25.*` or `128.10.112.*`. If
+you want to test the server with clients in a different IP address, we can
+manually modify the `allowed_ips` array in `myftps.c`.
+
+Though the server has the simple security protection mentioned above. The code
+is not audited or passes any real-world security test. Please use the `myftps`
+only for the experiment inside a secure environment (e.g. docker).
+
+## Project Structure
+
+### `myftpc.c`
+
+The source of `myftpc`. For security reasons, there are several limitation
+mentioned above on the client-side.
+
+If the input arguments are malformed (see spec in instruction mentioned above),
+`myftpc` will reject the command. Also, if the connection is lost after
+connected, the client will terminate immediately.
+
+### `myftps.c`
+
+The source of `myftps`. It will ignore the remote command randomly to simulate
+the behavior of `myftpc` on package lost or timeout. The following conditions
+will disconnect the TCP connection immediately:
+
+- Secret key mismatch.
+- The parameters in request are malformed (see spec in instruction mentioned
+  above).
+- Client address is not in white list (see the allow list in instruction
+  mentioned above).
+- Requested does not exist.
+- Randomly (50% chance) ignore the request.
+
+### `arg_checkers.c`
+
+Contains two checking functions to check if the arguments (filename and secret
+key) follows the spec.
+
+### `request_codec.c`
+
+Provides functionality to encodes request message from filename and secret and
+vice versa. Note that the total length of request is fixed to 10 bytes.
+
+### `socket_utils.c`
+
+Provides shared functionality to build, create, bind and connect socket-related
+data structure used by both client and server.
+
+## Analysis
+
+### Same Lab vs Different Labs
+
+The following is the statistics of file transmission between 2 machines in same
+lab.
+
+| file size (bytes) | same-lab completion time (ms) | same-lab throughput (bytes/ms) | different-labs completion time (ms) | different-labs throughput (bytes/ms) |
+| ----------------- | ----------------------------- | ------------------------------ | ----------------------------------- | ------------------------------------ |
+| 1K                | 2.195                         | 466.515                        | 4.235                               | 241.795                              |
+| 2K                | 4.519                         | 453.198                        | 4.927                               | 415.669                              |
+| 4K                | 3.983                         | 1028.371                       | 7.366                               | 556.068                              |
+| 8K                | 6.53                          | 1254.518                       | 11.95                               | 685.523                              |
+| 16K               | 11.836                        | 1384.251                       | 20.284                              | 807.73                               |
+| 32K               | 20.75                         | 1579.181                       | 36.328                              | 902.004                              |
+| 64K               | 40.93                         | 1601.173                       | 72.201                              | 907.688                              |
+| 128K              | 75.714                        | 1731.146                       | 131.6                               | 995.988                              |
+| 256K              | 149.943                       | 1748.291                       | 258.006                             | 1016.038                             |
+| 512K              | 291.836                       | 1760.324                       | 564.554                             | 928.676                              |
+| 1M                | 591.683                       | 1772.192                       | 961.443                             | 1090.627                             |
+| 2M                | 1164.455                      | 1800.973                       | 1489.877                            | 1407.601                             |
+| 4M                | 2182.411                      | 1921.867                       | 3794.393                            | 1105.395                             |
+| 8M                | 4378.048                      | 1916.061                       | 7578.114                            | 1106.952                             |
+| 16M               | 9550.879                      | 1756.615                       | 14313.703                           | 1172.109                             |
+| 32M               | 17888.158                     | 1875.79                        | 26028.311                           | 1289.151                             |
+| 64M               | 38215.547                     | 1756.062                       | 50110.191                           | 1339.226                             |
+| 128M              | 73504.717                     | 1852.974                       | 106147.926                          | 1264.44                              |
+
+The following is the visualization of the "same-lab" statistics. Note that the
+completion time chart is in log scale.
+
+![same-lab-completion-time](https://i.imgur.com/4xFJych.png)
+
+![same-lab-throughput](https://i.imgur.com/eBb6tI2.png)
+
+The following is the visualization of the "different-lab" statistics. Note that
+the completion time chart is in log scale.
+
+![diff-lab-completion-time](https://i.imgur.com/Dz4Cvmp.png)
+
+![diff-lab-throughput](https://i.imgur.com/cMEkOpU.png)
+
+From the statistics, we can see that the overall completion time of the
+"same-lab" is smaller than the one of "different-lab". This is expected as the
+physical distance is longer for 2 machines in different labs than in the same
+lab. The throughput is also higher in the "same-lab" case as less router or
+other core infrastructures is needed to transfer the data between 2 machines in
+same lab in comparison to 2 machines in 2 different labs. The same reason causes
+the fluctuation of throughput in "different-labs" case as more infrastructures
+involved, which causes higher nondeterministic overhead. Finally, the throughput
+for small files is relatively low as the overtime dominate the completion time
+for these cases.
+
+### Blocksize
+
+The following is the statistics of file transmission in different blocksizes and
+file sizes.
+
+| blocksize (bytes) | 64K bytes file throughput (bytes/ms) | 64M bytes file throughput (bytes/ms) |
+| ----------------- | ------------------------------------ | ------------------------------------ |
+| 512               | 567.063                              | 699.483                              |
+| 1024              | 1101.390                             | 1403.790                             |
+| 2048              | 1897.724                             | 2617.399                             |
+| 4096              | 2763.600                             | 4200.077                             |
+
+The following is the visualization of above data.
+
+![64k-blocksize-throughput](https://i.imgur.com/ggIKJsb.png)
+![64m-blocksize-throughput](https://i.imgur.com/BE9Etar.png)
+
+We can see that the throughput is heavily affected by the blocksize. The
+blocksize decides how many times a series of system calls need to be invoked.
+Thus, high blocksize can greatly reduce the overhead of socket I/O and disk I/O.
