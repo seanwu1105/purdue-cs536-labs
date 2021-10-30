@@ -178,7 +178,5 @@ int main(int argc, char *argv[])
     struct addrinfo *server_info;
     Config config;
     if (parse_args(argc, argv, &server_info, &config) != 0) return -1;
-
-    int status = run(server_info, &config);
-    return status;
+    return run(server_info, &config);
 }
