@@ -13,6 +13,7 @@
 
 #define REQUIRED_ARGC 7
 #define DUMMY_END_OF_PACKET 255
+#define SEQUENCE_NUMBER_SPACE_TO_WINDOWSIZE_RATIO 2
 
 int sockfd = -1;
 
@@ -95,9 +96,10 @@ int read_request(char *const filename, uint16_t *const secret_key,
 int send_window(const uint8_t *const data, const size_t data_size,
                 const struct sockaddr *const client_addr,
                 const socklen_t client_addr_len, const int is_eof,
-                const Config *const config)
+                const Config *const config,
+                size_t *const initial_sequence_number)
 {
-    size_t sequence_number = 0;
+    size_t sequence_number = *initial_sequence_number;
     size_t block_index = 0;
     while (block_index < data_size)
     {
@@ -124,6 +126,9 @@ int send_window(const uint8_t *const data, const size_t data_size,
         sequence_number++;
         block_index += config->blocksize;
     }
+    *initial_sequence_number =
+        (*initial_sequence_number + config->windowsize) %
+        (SEQUENCE_NUMBER_SPACE_TO_WINDOWSIZE_RATIO * config->windowsize);
     return 0;
 }
 
@@ -145,6 +150,7 @@ int send_file(const char *const filename, const Config *const config,
     prev_bytes_read = fread(prev_buf, sizeof(uint8_t), sizeof(prev_buf), file);
     printf("%ld bytes read\t", prev_bytes_read);
     printf("\n");
+    size_t initial_sequence_number = 0;
     while (1)
     {
         curr_bytes_read =
@@ -161,16 +167,18 @@ int send_file(const char *const filename, const Config *const config,
                 if (prev_bytes_read < config->blocksize * config->windowsize)
                 // File size is zero or smaller than blocksize * windowsize
                 {
-                    printf("send %ld prev\t", prev_bytes_read);
+                    printf("send %ld bytes with prev\t", prev_bytes_read);
                     if (send_window(prev_buf, prev_bytes_read, client_addr,
-                                    client_addr_len, 1, config) < 0)
+                                    client_addr_len, 1, config,
+                                    &initial_sequence_number) < 0)
                         return -1;
                 }
                 else // File size is a multiple of blocksize * windowsize
                 {
-                    printf("send %ld prev\t", prev_bytes_read + 1);
+                    printf("send %ld bytes with prev\t", prev_bytes_read + 1);
                     if (send_window(prev_buf, prev_bytes_read, client_addr,
-                                    client_addr_len, 1, config) < 0)
+                                    client_addr_len, 1, config,
+                                    &initial_sequence_number) < 0)
                         return -1;
                 }
 
@@ -178,23 +186,25 @@ int send_file(const char *const filename, const Config *const config,
             // blocksize * windowsize
             else
             {
-                printf("send %ld prev\t", prev_bytes_read);
+                printf("send %ld bytes with prev\t", prev_bytes_read);
                 if (send_window(prev_buf, prev_bytes_read, client_addr,
-                                client_addr_len, 0, config) < 0)
+                                client_addr_len, 0, config,
+                                &initial_sequence_number) < 0)
                     return -1;
 
-                printf("send %ld curr\t", curr_bytes_read);
+                printf("send %ld bytes with curr\t", curr_bytes_read);
                 if (send_window(curr_buf, curr_bytes_read, client_addr,
-                                client_addr_len, 1, config) < 0)
+                                client_addr_len, 1, config,
+                                &initial_sequence_number) < 0)
                     return -1;
             }
             printf("EOF\n");
             break;
         }
 
-        printf("send %ld prev", prev_bytes_read);
+        printf("send %ld bytes with prev", prev_bytes_read);
         send_window(prev_buf, prev_bytes_read, client_addr, client_addr_len, 0,
-                    config);
+                    config, &initial_sequence_number);
 
         printf("\n");
     }
