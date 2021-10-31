@@ -22,7 +22,10 @@
     "message_codec.h": "c",
     "request_codec.h": "c",
     "errno.h": "c",
-    "packet_codec.h": "c"
+    "packet_codec.h": "c",
+    "array": "c",
+    "string": "c",
+    "string_view": "c"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

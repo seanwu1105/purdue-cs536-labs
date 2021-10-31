@@ -207,6 +207,12 @@ int send_file(const char *const filename, const Config *const config,
     size_t prev_bytes_read;
     size_t curr_bytes_read;
     prev_bytes_read = fread(prev_buf, sizeof(uint8_t), sizeof(prev_buf), file);
+    if (ferror(file))
+    {
+        perror("fread");
+        fclose(file);
+        return -1;
+    }
     printf("%ld bytes read\n", prev_bytes_read);
     uint8_t initial_sequence_number = 0;
     while (1)
@@ -217,6 +223,7 @@ int send_file(const char *const filename, const Config *const config,
         if (ferror(file))
         {
             perror("fread");
+            fclose(file);
             return -1;
         }
         if (feof(file))
@@ -229,7 +236,10 @@ int send_file(const char *const filename, const Config *const config,
                     if (send_window(prev_buf, prev_bytes_read, client_addr,
                                     client_addr_len, 1, config,
                                     &initial_sequence_number) < 0)
+                    {
+                        fclose(file);
                         return -1;
+                    }
                 }
                 else // File size is a multiple of blocksize * windowsize
                 {
@@ -237,7 +247,10 @@ int send_file(const char *const filename, const Config *const config,
                     if (send_window(prev_buf, prev_bytes_read, client_addr,
                                     client_addr_len, 1, config,
                                     &initial_sequence_number) < 0)
+                    {
+                        fclose(file);
                         return -1;
+                    }
                 }
 
             // File size is larger than blocksize and not a multiple of
@@ -248,13 +261,19 @@ int send_file(const char *const filename, const Config *const config,
                 if (send_window(prev_buf, prev_bytes_read, client_addr,
                                 client_addr_len, 0, config,
                                 &initial_sequence_number) < 0)
+                {
+                    fclose(file);
                     return -1;
+                }
 
                 printf("send %ld bytes with curr\t", curr_bytes_read);
                 if (send_window(curr_buf, curr_bytes_read, client_addr,
                                 client_addr_len, 1, config,
                                 &initial_sequence_number) < 0)
+                {
+                    fclose(file);
                     return -1;
+                }
             }
             printf("EOF\n");
             break;

@@ -102,6 +102,34 @@ int send_ack(const uint8_t sequence_number,
     return 0;
 }
 
+int append_window_to_file(uint8_t *window_data, const uint8_t windowsize,
+                          const size_t last_blocksize,
+                          const Config *const config)
+{
+    FILE *file = fopen(config->filename, "a");
+    if (file == NULL)
+    {
+        perror("fopen");
+        return -1;
+    }
+
+    for (size_t i = 0; i < windowsize; i++)
+    {
+        fwrite(window_data + i * config->blocksize, sizeof(uint8_t),
+               i == windowsize - 1 ? last_blocksize : config->blocksize, file);
+
+        if (ferror(file))
+        {
+            perror("fwrite");
+            fclose(file);
+            return -1;
+        }
+    }
+
+    fclose(file);
+    return 0;
+}
+
 int receive_window_and_cancel_timeout(const Config *const config,
                                       const uint8_t initial_sequence_number,
                                       uint8_t *const is_eof)
@@ -110,6 +138,7 @@ int receive_window_and_cancel_timeout(const Config *const config,
     uint8_t last_num = initial_sequence_number + config->windowsize - 1;
     uint8_t received_sequence_numbers[config->windowsize];
     memset(received_sequence_numbers, 0, sizeof(received_sequence_numbers));
+    uint8_t window_data[config->windowsize][config->blocksize];
 
     uint8_t buffer[config->blocksize + 2];
     ssize_t bytes_read;
@@ -122,11 +151,13 @@ int receive_window_and_cancel_timeout(const Config *const config,
         setitimer(ITIMER_REAL, 0, NULL); // Cancel request timout timer
 
         uint8_t num;
-        uint8_t data[bytes_read > config->blocksize + 1 ? config->blocksize
-                                                        : bytes_read - 1];
-        decode_packet(buffer, &num, sizeof(data), data);
+        size_t blocksize = bytes_read > config->blocksize + 1
+                               ? config->blocksize
+                               : bytes_read - 1;
+        uint8_t block[blocksize];
+        decode_packet(buffer, &num, sizeof(block), block);
         printf("num: %d\t", num);
-        printf("sizeof_data: %ld\n", sizeof(data));
+        printf("sizeof_block: %ld\n", sizeof(block));
 
         if (num < initial_sequence_number)
         {
@@ -146,8 +177,8 @@ int receive_window_and_cancel_timeout(const Config *const config,
             continue;
         }
 
-        // TODO: Assemble blocks into window.
         received_sequence_numbers[num - initial_sequence_number] = 1;
+        memcpy(window_data[num - initial_sequence_number], block, blocksize);
 
         if (bytes_read != config->blocksize + 1)
         {
@@ -163,7 +194,14 @@ int receive_window_and_cancel_timeout(const Config *const config,
                 break;
             }
 
-        if (completed) break;
+        if (completed)
+        {
+            if (append_window_to_file((uint8_t *)window_data,
+                                      last_num - initial_sequence_number,
+                                      blocksize, config) < 0)
+                return -1;
+            break;
+        }
     }
 
     if (bytes_read < 0)
@@ -199,12 +237,12 @@ int receive_file_and_cancel_timeout(const Config *const config)
 
 int run(const struct addrinfo *const server_info, const Config *const config)
 {
-    // TODO: Check if file exists
-    // if (access(config->filename, F_OK) == 0)
-    // {
-    //     fprintf(stdout, "File already exists: %s\n", config->filename);
-    //     return -1;
-    // }
+    // Check if file exists
+    if (access(config->filename, F_OK) == 0)
+    {
+        fprintf(stdout, "File already exists: %s\n", config->filename);
+        return -1;
+    }
 
     // Request file
     while (1)
