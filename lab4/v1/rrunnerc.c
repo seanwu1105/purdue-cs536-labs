@@ -16,6 +16,7 @@
 
 #define REQUIRED_ARGC 7
 #define FILE_REQUEST_TIMEOUT_MS 500
+#define NUM_EOF_ACKS 8
 
 int sockfd = -1;
 
@@ -171,7 +172,9 @@ int receive_window_and_cancel_timeout(const Config *const config,
         return -1;
     }
 
-    if (send_ack(last_num, &server_addr, server_addr_len) < 0) return -1;
+    // If is EOF, send 8 duplicate ACKs. Otherwise, send one ACK.
+    for (size_t i = 0; i < (*is_eof ? NUM_EOF_ACKS : 1); i++)
+        if (send_ack(last_num, &server_addr, server_addr_len) < 0) return -1;
 
     return 0;
 }
@@ -191,7 +194,6 @@ int receive_file_and_cancel_timeout(const Config *const config)
             (SEQUENCE_NUMBER_SPACE_TO_WINDOWSIZE_RATIO * config->windowsize);
     } while (is_eof == 0);
 
-    // TODO: send 8 ACKs to indicate the end of transmission
     return 0;
 }
 
