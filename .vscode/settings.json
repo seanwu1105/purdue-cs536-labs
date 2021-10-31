@@ -21,7 +21,8 @@
     "stdint.h": "c",
     "message_codec.h": "c",
     "request_codec.h": "c",
-    "errno.h": "c"
+    "errno.h": "c",
+    "packet_codec.h": "c"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

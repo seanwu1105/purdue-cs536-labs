@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -91,8 +92,14 @@ int request_file_with_timeout(const struct addrinfo *const server_info,
     return 0;
 }
 
-int receive_file_and_cancel_timeout(const Config *const config)
+int receive_window_and_cancel_timeout(const Config *const config,
+                                      const size_t initial_sequence_number,
+                                      uint8_t *const is_eof)
 {
+    *is_eof = 0;
+    uint8_t received_sequence_numbers[config->windowsize];
+    memset(received_sequence_numbers, 0, sizeof(received_sequence_numbers));
+
     uint8_t buffer[config->blocksize + 2];
     ssize_t bytes_read;
     while ((bytes_read =
@@ -108,7 +115,33 @@ int receive_file_and_cancel_timeout(const Config *const config)
         printf("num: %d\t", num);
         printf("sizeof_data: %ld\n", sizeof(data));
 
-        if (bytes_read != config->blocksize + 1) break;
+        if (num < initial_sequence_number ||
+            num >= initial_sequence_number + config->windowsize)
+        {
+            // TODO: ACK again.
+            continue;
+        }
+
+        // TODO: Assemble blocks into window.
+        received_sequence_numbers[num - initial_sequence_number] = 1;
+
+        uint8_t last_num = initial_sequence_number + config->windowsize - 1;
+        if (bytes_read != config->blocksize + 1)
+        {
+            last_num = num;
+            *is_eof = 1;
+        }
+
+        uint8_t completed = 1;
+        for (size_t i = initial_sequence_number; i <= last_num; i++)
+            if (received_sequence_numbers[i - initial_sequence_number] == 0)
+            {
+                // TODO: ACK.
+                completed = 0;
+                break;
+            }
+
+        if (completed) break;
     }
 
     if (bytes_read < 0)
@@ -116,7 +149,23 @@ int receive_file_and_cancel_timeout(const Config *const config)
         if (errno != EINTR) perror("recvfrom");
         return -1;
     }
+    return 0;
+}
 
+int receive_file_and_cancel_timeout(const Config *const config)
+{
+    size_t initial_sequence_number = 0;
+    uint8_t is_eof = 0;
+
+    do
+    {
+        if (receive_window_and_cancel_timeout(config, initial_sequence_number,
+                                              &is_eof) < 0)
+            return -1;
+        initial_sequence_number =
+            (initial_sequence_number + config->windowsize) %
+            (SEQUENCE_NUMBER_SPACE_TO_WINDOWSIZE_RATIO * config->windowsize);
+    } while (is_eof == 0);
     return 0;
 }
 
@@ -133,12 +182,10 @@ int run(const struct addrinfo *const server_info, const Config *const config)
     while (1)
     {
         request_file_with_timeout(server_info, config, FILE_REQUEST_TIMEOUT_MS);
-        printf("Requested file %s\n", config->filename);
         if (receive_file_and_cancel_timeout(config) == 0)
             break;
         else if (errno != EINTR)
             return -1;
-        printf("Received file %s\n", config->filename);
     }
     return 0;
 }

@@ -13,7 +13,6 @@
 
 #define REQUIRED_ARGC 7
 #define DUMMY_END_OF_PACKET 255
-#define SEQUENCE_NUMBER_SPACE_TO_WINDOWSIZE_RATIO 2
 
 int sockfd = -1;
 
