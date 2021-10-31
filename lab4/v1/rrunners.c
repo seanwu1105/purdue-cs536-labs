@@ -99,8 +99,25 @@ int run(const struct addrinfo *const server_info, const Config *const config)
         char filename[MAX_FILENAME_LEN];
         struct sockaddr client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
-        read_request(sockfd, filename, &secret_key, &client_addr,
-                     &client_addr_len);
+        if (read_request(sockfd, filename, &secret_key, &client_addr,
+                         &client_addr_len) < 0)
+            continue;
+
+        if (config->secret_key != secret_key)
+        {
+            fprintf(stderr, "Secret key mismatch: %hu != %hu\n",
+                    config->secret_key, secret_key);
+            continue;
+        }
+
+        if (check_filename(filename) != 0) continue;
+
+        // Check if file exists
+        if (access(filename, F_OK) == -1)
+        {
+            perror("access");
+            continue;
+        }
 
         printf("Received request for file %s\n", filename);
     }

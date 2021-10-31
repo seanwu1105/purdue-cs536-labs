@@ -117,12 +117,12 @@ int receive_file_and_cancel_timeout(const Config *const config)
 
 int run(const struct addrinfo *const server_info, const Config *const config)
 {
-    // Check if file exists
-    if (access(config->filename, F_OK) == 0)
-    {
-        fprintf(stdout, "File already exists: %s\n", config->filename);
-        return -1;
-    }
+    // TODO: Check if file exists
+    // if (access(config->filename, F_OK) == 0)
+    // {
+    //     fprintf(stdout, "File already exists: %s\n", config->filename);
+    //     return -1;
+    // }
 
     // Request file
     while (1)
