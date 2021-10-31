@@ -25,11 +25,7 @@ static void sigint_handler(int _)
     exit(EXIT_SUCCESS);
 }
 
-static void sigalrm_handler(int _)
-{
-    printf("alarm\n");
-    return;
-}
+static void sigalrm_handler(int _) { return; }
 typedef struct
 {
     const char *filename;
@@ -150,7 +146,6 @@ int main(int argc, char *argv[])
     Config config;
     if (parse_args(argc, argv, &server_info, &config) != 0) return -1;
 
-    // Create socket
     if ((sockfd = create_socket_with_first_usable_addr(server_info)) == -1)
         return -1;
 
