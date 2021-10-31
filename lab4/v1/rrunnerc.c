@@ -157,7 +157,10 @@ int receive_window_and_cancel_timeout(const Config *const config,
         uint8_t block[blocksize];
         decode_packet(buffer, &num, sizeof(block), block);
         printf("num: %d\t", num);
-        printf("sizeof_block: %ld\n", sizeof(block));
+        printf("sizeof_block: %ld\t", sizeof(block));
+        for (size_t i = 0; i < blocksize; i++)
+            printf("%c", block[i]);
+        printf("\n");
 
         if (num < initial_sequence_number)
         {
@@ -197,7 +200,7 @@ int receive_window_and_cancel_timeout(const Config *const config,
         if (completed)
         {
             if (append_window_to_file((uint8_t *)window_data,
-                                      last_num - initial_sequence_number,
+                                      last_num - initial_sequence_number + 1,
                                       blocksize, config) < 0)
                 return -1;
             break;
