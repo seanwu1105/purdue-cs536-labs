@@ -14,9 +14,14 @@
 #define REQUIRED_ARGC 7
 #define DUMMY_END_OF_PACKET 255
 
-int sockfd = -1;
+int request_sockfd = -1;
+int packet_sockfd = -1;
 
-void tear_down() { close(sockfd); }
+void tear_down()
+{
+    close(request_sockfd);
+    close(packet_sockfd);
+}
 
 static void sigint_handler(int _)
 {
@@ -80,8 +85,8 @@ int read_request(char *const filename, uint16_t *const secret_key,
                  socklen_t *const client_addr_len)
 {
     uint8_t request[REQUEST_SIZE];
-    const ssize_t bytes_read = recvfrom(sockfd, request, REQUEST_SIZE, 0,
-                                        client_addr, client_addr_len);
+    const ssize_t bytes_read = recvfrom(request_sockfd, request, REQUEST_SIZE,
+                                        0, client_addr, client_addr_len);
     if (bytes_read == -1)
     {
         perror("read");
@@ -89,6 +94,19 @@ int read_request(char *const filename, uint16_t *const secret_key,
     }
 
     decode_request(request, filename, secret_key);
+    return 0;
+}
+
+int receive_ack()
+{
+    uint8_t ack;
+    printf(" Waiting ACK... ");
+    if (recvfrom(packet_sockfd, &ack, sizeof(ack), 0, NULL, NULL) < 0)
+    {
+        perror("recvfrom");
+        return -1;
+    }
+    printf("ACK received: %u\t", ack);
     return 0;
 }
 
@@ -100,6 +118,12 @@ int send_window(const uint8_t *const data, const size_t data_size,
 {
     size_t sequence_number = *initial_sequence_number;
     size_t block_index = 0;
+    if ((packet_sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+        perror("socket");
+        return -1;
+    }
+
     while (block_index < data_size)
     {
         size_t blocksize = data_size - block_index < config->blocksize
@@ -115,9 +139,10 @@ int send_window(const uint8_t *const data, const size_t data_size,
         encode_packet(sequence_number, block_data, blocksize, packet);
         if (need_to_append_dummy) packet[blocksize + 1] = DUMMY_END_OF_PACKET;
 
-        if (sendto(sockfd, packet, sizeof(packet), 0, client_addr,
+        if (sendto(packet_sockfd, packet, sizeof(packet), 0, client_addr,
                    client_addr_len) == -1)
         {
+            close(packet_sockfd);
             perror("sendto");
             return -1;
         }
@@ -125,6 +150,11 @@ int send_window(const uint8_t *const data, const size_t data_size,
         sequence_number++;
         block_index += config->blocksize;
     }
+
+    if (receive_ack() < 0) return -1;
+
+    close(packet_sockfd);
+
     *initial_sequence_number =
         (*initial_sequence_number + config->windowsize) %
         (SEQUENCE_NUMBER_SPACE_TO_WINDOWSIZE_RATIO * config->windowsize);
@@ -147,8 +177,7 @@ int send_file(const char *const filename, const Config *const config,
     size_t prev_bytes_read;
     size_t curr_bytes_read;
     prev_bytes_read = fread(prev_buf, sizeof(uint8_t), sizeof(prev_buf), file);
-    printf("%ld bytes read\t", prev_bytes_read);
-    printf("\n");
+    printf("%ld bytes read\n", prev_bytes_read);
     size_t initial_sequence_number = 0;
     while (1)
     {
@@ -249,6 +278,7 @@ int run(const Config *const config)
         if (pid == 0)
         {
             // Child process
+            close(request_sockfd);
             if (send_file(filename, config, &client_addr, client_addr_len) < 0)
                 exit(EXIT_FAILURE);
             exit(EXIT_SUCCESS);
@@ -268,12 +298,13 @@ int main(int argc, char *argv[])
     Config config;
     if (parse_args(argc, argv, &server_info, &config) != 0) return -1;
 
-    if ((sockfd = create_socket_with_first_usable_addr(server_info)) == -1)
+    if ((request_sockfd = create_socket_with_first_usable_addr(server_info)) ==
+        -1)
         return -1;
 
-    if ((bind_socket_with_first_usable_addr(server_info, sockfd)) == -1)
+    if ((bind_socket_with_first_usable_addr(server_info, request_sockfd)) == -1)
     {
-        close(sockfd);
+        close(request_sockfd);
         return -1;
     }
 

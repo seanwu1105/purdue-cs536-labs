@@ -92,21 +92,36 @@ int request_file_with_timeout(const struct addrinfo *const server_info,
     return 0;
 }
 
+int send_ack(const uint8_t sequence_number,
+             const struct sockaddr *const server_addr,
+             const socklen_t server_addr_len)
+{
+    if (sendto(sockfd, &sequence_number, sizeof(sequence_number), 0,
+               server_addr, server_addr_len) < 0)
+    {
+        perror("sendto");
+        return -1;
+    }
+    return 0;
+}
+
 int receive_window_and_cancel_timeout(const Config *const config,
-                                      const size_t initial_sequence_number,
+                                      const uint8_t initial_sequence_number,
                                       uint8_t *const is_eof)
 {
     *is_eof = 0;
+    uint8_t last_num = initial_sequence_number + config->windowsize - 1;
     uint8_t received_sequence_numbers[config->windowsize];
     memset(received_sequence_numbers, 0, sizeof(received_sequence_numbers));
 
     uint8_t buffer[config->blocksize + 2];
     ssize_t bytes_read;
-    while ((bytes_read =
-                recvfrom(sockfd, buffer, sizeof(buffer), 0, NULL, NULL)) > 0)
+    struct sockaddr server_addr;
+    socklen_t server_addr_len = sizeof(server_addr);
+    while ((bytes_read = recvfrom(sockfd, buffer, sizeof(buffer), 0,
+                                  &server_addr, &server_addr_len)) > 0)
     {
         setitimer(ITIMER_REAL, 0, NULL);
-        printf("bytes_read: %ld\t", bytes_read);
 
         uint8_t num;
         uint8_t data[bytes_read > config->blocksize + 1 ? config->blocksize
@@ -115,17 +130,27 @@ int receive_window_and_cancel_timeout(const Config *const config,
         printf("num: %d\t", num);
         printf("sizeof_data: %ld\n", sizeof(data));
 
-        if (num < initial_sequence_number ||
-            num >= initial_sequence_number + config->windowsize)
+        if (num < initial_sequence_number)
         {
-            // TODO: ACK again.
+            uint8_t previous_ack = initial_sequence_number - 1;
+            if (send_ack(previous_ack, &server_addr, server_addr_len) < 0)
+                return -1;
+            continue;
+        }
+        if (num >= initial_sequence_number + config->windowsize)
+        {
+            uint8_t previous_ack =
+                initial_sequence_number +
+                config->windowsize * SEQUENCE_NUMBER_SPACE_TO_WINDOWSIZE_RATIO -
+                1;
+            if (send_ack(previous_ack, &server_addr, server_addr_len) < 0)
+                return -1;
             continue;
         }
 
         // TODO: Assemble blocks into window.
         received_sequence_numbers[num - initial_sequence_number] = 1;
 
-        uint8_t last_num = initial_sequence_number + config->windowsize - 1;
         if (bytes_read != config->blocksize + 1)
         {
             last_num = num;
@@ -136,7 +161,6 @@ int receive_window_and_cancel_timeout(const Config *const config,
         for (size_t i = initial_sequence_number; i <= last_num; i++)
             if (received_sequence_numbers[i - initial_sequence_number] == 0)
             {
-                // TODO: ACK.
                 completed = 0;
                 break;
             }
@@ -149,6 +173,9 @@ int receive_window_and_cancel_timeout(const Config *const config,
         if (errno != EINTR) perror("recvfrom");
         return -1;
     }
+
+    if (send_ack(last_num, &server_addr, server_addr_len) < 0) return -1;
+
     return 0;
 }
 
