@@ -297,7 +297,7 @@ int run(const Config *const config)
     {
         // Accept file request
         uint16_t secret_key;
-        char filename[MAX_FILENAME_LEN];
+        char filename[MAX_FILENAME_LEN + 1];
         struct sockaddr client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
         if (read_request(filename, &secret_key, &client_addr,

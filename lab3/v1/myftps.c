@@ -149,7 +149,7 @@ int run(const Config *const config)
         }
 
         uint16_t secret_key;
-        char filename[MAX_FILENAME_LEN];
+        char filename[MAX_FILENAME_LEN + 1];
         if (read_request(sockfd_full, filename, &secret_key) != 0)
         {
             close(sockfd_full);
