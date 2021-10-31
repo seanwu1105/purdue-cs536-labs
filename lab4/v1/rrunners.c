@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "arg_checkers.h"
@@ -91,18 +92,37 @@ int read_request(char *const filename, uint16_t *const secret_key,
     return 0;
 }
 
-int send_packet(const uint8_t *const data, const size_t data_size,
+int send_window(const uint8_t *const data, const size_t data_size,
                 const struct sockaddr *const client_addr,
-                const socklen_t client_addr_len, const int append_dummy_end)
+                const socklen_t client_addr_len, const int is_eof,
+                const Config *const config)
 {
-    uint8_t packet[append_dummy_end ? 1 + data_size + 1 : 1 + data_size];
-    encode_packet(99, data, data_size, packet);
-    if (append_dummy_end) packet[data_size + 1] = DUMMY_END_OF_PACKET;
-    if (sendto(sockfd, packet, sizeof(packet), 0, client_addr,
-               client_addr_len) < 0)
+    size_t sequence_number = 0;
+    size_t block_index = 0;
+    while (block_index < data_size)
     {
-        perror("sendto");
-        return -1;
+        size_t blocksize = data_size - block_index < config->blocksize
+                               ? data_size - block_index
+                               : config->blocksize;
+        uint8_t block_data[blocksize];
+        memcpy(block_data, data + block_index, blocksize * sizeof(uint8_t));
+
+        unsigned short need_to_append_dummy =
+            is_eof && (block_index + config->blocksize) == data_size;
+
+        uint8_t packet[1 + blocksize + (need_to_append_dummy ? 1 : 0)];
+        encode_packet(sequence_number, block_data, blocksize, packet);
+        if (need_to_append_dummy) packet[blocksize + 1] = DUMMY_END_OF_PACKET;
+
+        if (sendto(sockfd, packet, sizeof(packet), 0, client_addr,
+                   client_addr_len) == -1)
+        {
+            perror("sendto");
+            return -1;
+        }
+
+        sequence_number++;
+        block_index += config->blocksize;
     }
     return 0;
 }
@@ -118,8 +138,8 @@ int send_file(const char *const filename, const Config *const config,
         return -1;
     }
 
-    uint8_t prev_buf[config->blocksize];
-    uint8_t curr_buf[config->blocksize];
+    uint8_t prev_buf[config->blocksize * config->windowsize];
+    uint8_t curr_buf[config->blocksize * config->windowsize];
     size_t prev_bytes_read;
     size_t curr_bytes_read;
     prev_bytes_read = fread(prev_buf, sizeof(uint8_t), sizeof(prev_buf), file);
@@ -138,34 +158,34 @@ int send_file(const char *const filename, const Config *const config,
         if (feof(file))
         {
             if (curr_bytes_read == 0)
-                // File size is zero or smaller than blocksize
-                if (prev_bytes_read < config->blocksize)
+                if (prev_bytes_read < config->blocksize * config->windowsize)
+                // File size is zero or smaller than blocksize * windowsize
                 {
                     printf("send %ld prev\t", prev_bytes_read);
-                    if (send_packet(prev_buf, prev_bytes_read, client_addr,
-                                    client_addr_len, 0) < 0)
+                    if (send_window(prev_buf, prev_bytes_read, client_addr,
+                                    client_addr_len, 1, config) < 0)
                         return -1;
                 }
-                else // File size is a multiple of blocksize
+                else // File size is a multiple of blocksize * windowsize
                 {
                     printf("send %ld prev\t", prev_bytes_read + 1);
-                    if (send_packet(prev_buf, prev_bytes_read, client_addr,
-                                    client_addr_len, 1) < 0)
+                    if (send_window(prev_buf, prev_bytes_read, client_addr,
+                                    client_addr_len, 1, config) < 0)
                         return -1;
                 }
 
             // File size is larger than blocksize and not a multiple of
-            // blocksize
+            // blocksize * windowsize
             else
             {
                 printf("send %ld prev\t", prev_bytes_read);
-                if (send_packet(prev_buf, prev_bytes_read, client_addr,
-                                client_addr_len, 0) < 0)
+                if (send_window(prev_buf, prev_bytes_read, client_addr,
+                                client_addr_len, 0, config) < 0)
                     return -1;
 
                 printf("send %ld curr\t", curr_bytes_read);
-                if (send_packet(curr_buf, curr_bytes_read, client_addr,
-                                client_addr_len, 0) < 0)
+                if (send_window(curr_buf, curr_bytes_read, client_addr,
+                                client_addr_len, 1, config) < 0)
                     return -1;
             }
             printf("EOF\n");
@@ -173,7 +193,8 @@ int send_file(const char *const filename, const Config *const config,
         }
 
         printf("send %ld prev", prev_bytes_read);
-        send_packet(prev_buf, prev_bytes_read, client_addr, client_addr_len, 0);
+        send_window(prev_buf, prev_bytes_read, client_addr, client_addr_len, 0,
+                    config);
 
         printf("\n");
     }
