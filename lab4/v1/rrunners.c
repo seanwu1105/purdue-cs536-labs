@@ -1,9 +1,11 @@
+#include <errno.h>
 #include <netdb.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "arg_checkers.h"
@@ -29,14 +31,18 @@ static void sigint_handler(int _)
     exit(EXIT_SUCCESS);
 }
 
-static void sigalrm_handler(int _) { return; }
+static void sigalrm_handler(int _)
+{
+    printf("timeout\n");
+    return;
+}
 
 typedef struct
 {
     uint16_t secret_key;
     uint16_t blocksize; // <= 1471
     uint8_t windowsize; // <= 63
-    unsigned long long timeout_microseconds;
+    unsigned long long timeout_usec;
 } Config;
 
 int parse_args(int argc, char *argv[], struct addrinfo **server_info,
@@ -69,13 +75,13 @@ int parse_args(int argc, char *argv[], struct addrinfo **server_info,
     if ((status = check_windowsize(windowsize)) != 0) return status;
     config->windowsize = (uint8_t)windowsize;
 
-    long long timeout_microseconds = strtoull(argv[6], NULL, 0);
-    if (timeout_microseconds < 0)
+    long long timeout_usec = strtoull(argv[6], NULL, 0);
+    if (timeout_usec < 0)
     {
         fprintf(stderr, "Timeout must be non-negative\n");
         return -1;
     }
-    config->timeout_microseconds = timeout_microseconds;
+    config->timeout_usec = timeout_usec;
 
     return 0;
 }
@@ -97,16 +103,25 @@ int read_request(char *const filename, uint16_t *const secret_key,
     return 0;
 }
 
-int receive_ack()
+int receive_ack_and_cancel_timeout(const uint8_t expected)
 {
-    uint8_t ack;
-    printf(" Waiting ACK... ");
-    if (recvfrom(packet_sockfd, &ack, sizeof(ack), 0, NULL, NULL) < 0)
+    while (1)
     {
-        perror("recvfrom");
-        return -1;
+        uint8_t ack;
+        printf(" Waiting ACK... ");
+        if (recvfrom(packet_sockfd, &ack, sizeof(ack), 0, NULL, NULL) < 0)
+        {
+            if (errno != EINTR) perror("recvfrom");
+            return -1;
+        }
+        printf("ACK received: %u (expect: %u)\t", ack, expected);
+
+        if (ack == expected)
+        {
+            setitimer(ITIMER_REAL, 0, NULL); // Cancel ack timout timer
+            break;
+        }
     }
-    printf("ACK received: %u\t", ack);
     return 0;
 }
 
@@ -114,46 +129,61 @@ int send_window(const uint8_t *const data, const size_t data_size,
                 const struct sockaddr *const client_addr,
                 const socklen_t client_addr_len, const int is_eof,
                 const Config *const config,
-                size_t *const initial_sequence_number)
+                uint8_t *const initial_sequence_number)
 {
-    size_t sequence_number = *initial_sequence_number;
-    size_t block_index = 0;
-    if ((packet_sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    while (1)
     {
-        perror("socket");
-        return -1;
-    }
-
-    while (block_index < data_size)
-    {
-        size_t blocksize = data_size - block_index < config->blocksize
-                               ? data_size - block_index
-                               : config->blocksize;
-        uint8_t block_data[blocksize];
-        memcpy(block_data, data + block_index, blocksize * sizeof(uint8_t));
-
-        unsigned short need_to_append_dummy =
-            is_eof && (block_index + config->blocksize) == data_size;
-
-        uint8_t packet[1 + blocksize + (need_to_append_dummy ? 1 : 0)];
-        encode_packet(sequence_number, block_data, blocksize, packet);
-        if (need_to_append_dummy) packet[blocksize + 1] = DUMMY_END_OF_PACKET;
-
-        if (sendto(packet_sockfd, packet, sizeof(packet), 0, client_addr,
-                   client_addr_len) == -1)
+        uint8_t sequence_number = *initial_sequence_number;
+        size_t block_index = 0;
+        if ((packet_sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
         {
-            close(packet_sockfd);
-            perror("sendto");
+            perror("socket");
             return -1;
         }
 
-        sequence_number++;
-        block_index += config->blocksize;
+        while (block_index < data_size)
+        {
+            size_t blocksize = data_size - block_index < config->blocksize
+                                   ? data_size - block_index
+                                   : config->blocksize;
+            uint8_t block_data[blocksize];
+            memcpy(block_data, data + block_index, blocksize * sizeof(uint8_t));
+
+            unsigned short need_to_append_dummy =
+                is_eof && (block_index + config->blocksize) == data_size;
+
+            uint8_t packet[1 + blocksize + (need_to_append_dummy ? 1 : 0)];
+            encode_packet(sequence_number, block_data, blocksize, packet);
+            if (need_to_append_dummy)
+                packet[blocksize + 1] = DUMMY_END_OF_PACKET;
+
+            if (sendto(packet_sockfd, packet, sizeof(packet), 0, client_addr,
+                       client_addr_len) == -1)
+            {
+                close(packet_sockfd);
+                perror("sendto");
+                return -1;
+            }
+
+            printf("send num: %u\n", sequence_number);
+
+            sequence_number++;
+            block_index += config->blocksize;
+        }
+
+        // Start ACK timeout timer
+        setitimer(ITIMER_REAL,
+                  &(struct itimerval){{0, config->timeout_usec},
+                                      {0, config->timeout_usec}},
+                  NULL);
+
+        int ack_status = receive_ack_and_cancel_timeout(sequence_number - 1);
+        close(packet_sockfd);
+        if (ack_status == 0)
+            break;
+        else if (errno != EINTR)
+            return -1;
     }
-
-    if (receive_ack() < 0) return -1;
-
-    close(packet_sockfd);
 
     *initial_sequence_number =
         (*initial_sequence_number + config->windowsize) %
@@ -178,7 +208,7 @@ int send_file(const char *const filename, const Config *const config,
     size_t curr_bytes_read;
     prev_bytes_read = fread(prev_buf, sizeof(uint8_t), sizeof(prev_buf), file);
     printf("%ld bytes read\n", prev_bytes_read);
-    size_t initial_sequence_number = 0;
+    uint8_t initial_sequence_number = 0;
     while (1)
     {
         curr_bytes_read =

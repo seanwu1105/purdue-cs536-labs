@@ -72,9 +72,8 @@ int parse_args(int argc, char *argv[], struct addrinfo **server_info,
     return 0;
 }
 
-int request_file_with_timeout(const struct addrinfo *const server_info,
-                              const Config *const config,
-                              unsigned long timeout_ms)
+int request_file(const struct addrinfo *const server_info,
+                 const Config *const config)
 {
     uint8_t request[REQUEST_SIZE];
     encode_request(config->filename, config->secret_key, request);
@@ -85,10 +84,6 @@ int request_file_with_timeout(const struct addrinfo *const server_info,
         return -1;
     }
 
-    setitimer(
-        ITIMER_REAL,
-        &(struct itimerval){{0, timeout_ms * 1000}, {0, timeout_ms * 1000}},
-        NULL);
     return 0;
 }
 
@@ -96,6 +91,7 @@ int send_ack(const uint8_t sequence_number,
              const struct sockaddr *const server_addr,
              const socklen_t server_addr_len)
 {
+    printf("Send ACK %d\n", sequence_number);
     if (sendto(sockfd, &sequence_number, sizeof(sequence_number), 0,
                server_addr, server_addr_len) < 0)
     {
@@ -118,10 +114,11 @@ int receive_window_and_cancel_timeout(const Config *const config,
     ssize_t bytes_read;
     struct sockaddr server_addr;
     socklen_t server_addr_len = sizeof(server_addr);
+    printf("wait receiving...\n");
     while ((bytes_read = recvfrom(sockfd, buffer, sizeof(buffer), 0,
                                   &server_addr, &server_addr_len)) > 0)
     {
-        setitimer(ITIMER_REAL, 0, NULL);
+        setitimer(ITIMER_REAL, 0, NULL); // Cancel request timout timer
 
         uint8_t num;
         uint8_t data[bytes_read > config->blocksize + 1 ? config->blocksize
@@ -193,6 +190,8 @@ int receive_file_and_cancel_timeout(const Config *const config)
             (initial_sequence_number + config->windowsize) %
             (SEQUENCE_NUMBER_SPACE_TO_WINDOWSIZE_RATIO * config->windowsize);
     } while (is_eof == 0);
+
+    // TODO: send 8 ACKs to indicate the end of transmission
     return 0;
 }
 
@@ -208,7 +207,12 @@ int run(const struct addrinfo *const server_info, const Config *const config)
     // Request file
     while (1)
     {
-        request_file_with_timeout(server_info, config, FILE_REQUEST_TIMEOUT_MS);
+        request_file(server_info, config);
+        // Start request timeout timer
+        setitimer(ITIMER_REAL,
+                  &(struct itimerval){{0, FILE_REQUEST_TIMEOUT_MS * 1000},
+                                      {0, FILE_REQUEST_TIMEOUT_MS * 1000}},
+                  NULL);
         if (receive_file_and_cancel_timeout(config) == 0)
             break;
         else if (errno != EINTR)
