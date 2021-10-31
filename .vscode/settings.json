@@ -20,7 +20,8 @@
     "sigevent-consts.h": "c",
     "stdint.h": "c",
     "message_codec.h": "c",
-    "request_codec.h": "c"
+    "request_codec.h": "c",
+    "errno.h": "c"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

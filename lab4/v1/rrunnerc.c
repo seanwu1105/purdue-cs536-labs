@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "arg_checkers.h"
+#include "packet_codec.h"
 #include "request_codec.h"
 #include "socket_utils.h"
 
@@ -95,15 +96,19 @@ int receive_file_and_cancel_timeout(const Config *const config)
     uint8_t buffer[config->blocksize + 2];
     ssize_t bytes_read;
     while ((bytes_read =
-                recvfrom(sockfd, buffer, sizeof(buffer), 0, NULL, NULL)) >= 0)
+                recvfrom(sockfd, buffer, sizeof(buffer), 0, NULL, NULL)) > 0)
     {
         setitimer(ITIMER_REAL, 0, NULL);
-        printf("%ld\n", bytes_read);
+        printf("bytes_read: %ld\t", bytes_read);
 
-        if (bytes_read != config->blocksize + 1)
-        {
-            break;
-        }
+        uint8_t num;
+        uint8_t data[bytes_read > config->blocksize + 1 ? config->blocksize
+                                                        : bytes_read - 1];
+        decode_packet(buffer, &num, sizeof(data), data);
+        printf("num: %d\t", num);
+        printf("sizeof_data: %ld\n", sizeof(data));
+
+        if (bytes_read != config->blocksize + 1) break;
     }
 
     if (bytes_read < 0)

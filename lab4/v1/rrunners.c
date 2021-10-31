@@ -138,7 +138,8 @@ int send_file(const char *const filename, const Config *const config,
         if (feof(file))
         {
             if (curr_bytes_read == 0)
-                if (prev_bytes_read < config->blocksize) // File is empty
+                // File size is zero or smaller than blocksize
+                if (prev_bytes_read < config->blocksize)
                 {
                     printf("send %ld prev\t", prev_bytes_read);
                     if (send_packet(prev_buf, prev_bytes_read, client_addr,
