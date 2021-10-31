@@ -92,7 +92,7 @@ int request_file_with_timeout(const struct addrinfo *const server_info,
 
 int receive_file_and_cancel_timeout(const Config *const config)
 {
-    uint8_t buffer[config->blocksize];
+    uint8_t buffer[config->blocksize + 2];
     ssize_t bytes_read;
     while ((bytes_read =
                 recvfrom(sockfd, buffer, sizeof(buffer), 0, NULL, NULL)) >= 0)
@@ -100,7 +100,7 @@ int receive_file_and_cancel_timeout(const Config *const config)
         setitimer(ITIMER_REAL, 0, NULL);
         printf("%ld\n", bytes_read);
 
-        if (bytes_read != config->blocksize)
+        if (bytes_read != config->blocksize + 1)
         {
             break;
         }
@@ -129,7 +129,10 @@ int run(const struct addrinfo *const server_info, const Config *const config)
     {
         request_file_with_timeout(server_info, config, FILE_REQUEST_TIMEOUT_MS);
         printf("Requested file %s\n", config->filename);
-        receive_file_and_cancel_timeout(config);
+        if (receive_file_and_cancel_timeout(config) == 0)
+            break;
+        else if (errno != EINTR)
+            return -1;
         printf("Received file %s\n", config->filename);
     }
     return 0;
