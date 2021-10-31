@@ -145,10 +145,10 @@ int run(const struct addrinfo *const server_info, const Config *const config)
         return -1;
     }
 
-    // Request file
     struct timeval start_time;
     gettimeofday(&start_time, NULL);
 
+    // Request file
     uint8_t request[REQUEST_SIZE];
     encode_request(config->filename, config->secret_key, request);
     if (write(sockfd, request, sizeof(request)) == -1)
