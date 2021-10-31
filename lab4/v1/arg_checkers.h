@@ -3,10 +3,10 @@
 
 #define MIN_SECRET_KEY 0
 #define MAX_SECRET_KEY 65535
-#define MIN_BLOCKSIZE 0
+#define MIN_BLOCKSIZE 1
 #define MAX_BLOCKSIZE 1471
-#define MIN_WINDOWSIZE 0
-#define MAX_WINDOWSIZE 63
+#define MIN_WINDOWSIZE 1
+#define MAX_WINDOWSIZE 64
 
 int check_filename(const char *const filename);
 int check_secret_key(const long long secret_key);

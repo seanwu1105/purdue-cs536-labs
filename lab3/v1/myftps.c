@@ -191,8 +191,10 @@ int run(const Config *const config)
         if (k == 0)
         {
             // Child process
-            send_file(sockfd_full, filename, config->blocksize_byte);
+            int status =
+                send_file(sockfd_full, filename, config->blocksize_byte);
             close(sockfd_full);
+            if (status < 0) exit(EXIT_FAILURE);
             exit(EXIT_SUCCESS);
         }
         else
