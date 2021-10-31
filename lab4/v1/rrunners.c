@@ -108,13 +108,11 @@ int receive_ack_and_cancel_timeout(const uint8_t expected)
     while (1)
     {
         uint8_t ack;
-        printf(" Waiting ACK... ");
         if (recvfrom(packet_sockfd, &ack, sizeof(ack), 0, NULL, NULL) < 0)
         {
             if (errno != EINTR) perror("recvfrom");
             return -1;
         }
-        printf("ACK received: %u (expect: %u)\t", ack, expected);
 
         if (ack == expected)
         {
@@ -131,6 +129,12 @@ int send_window(const uint8_t *const data, const size_t data_size,
                 const Config *const config,
                 uint8_t *const initial_sequence_number)
 {
+    printf("send window: ");
+    for (size_t i = 0; i < data_size; i++)
+    {
+        printf("%c", data[i]);
+    }
+    printf("\n");
     while (1)
     {
         uint8_t sequence_number = *initial_sequence_number;
@@ -164,8 +168,6 @@ int send_window(const uint8_t *const data, const size_t data_size,
                 perror("sendto");
                 return -1;
             }
-
-            printf("send num: %u\n", sequence_number);
 
             sequence_number++;
             block_index += config->blocksize;
@@ -213,13 +215,12 @@ int send_file(const char *const filename, const Config *const config,
         fclose(file);
         return -1;
     }
-    printf("%ld bytes read\n", prev_bytes_read);
+
     uint8_t initial_sequence_number = 0;
     while (1)
     {
         curr_bytes_read =
             fread(curr_buf, sizeof(uint8_t), sizeof(curr_buf), file);
-        printf("%ld bytes read\t", curr_bytes_read);
         if (ferror(file))
         {
             perror("fread");
@@ -232,7 +233,6 @@ int send_file(const char *const filename, const Config *const config,
                 if (prev_bytes_read < config->blocksize * config->windowsize)
                 // File size is zero or smaller than blocksize * windowsize
                 {
-                    printf("send %ld bytes with prev\t", prev_bytes_read);
                     if (send_window(prev_buf, prev_bytes_read, client_addr,
                                     client_addr_len, 1, config,
                                     &initial_sequence_number) < 0)
@@ -243,7 +243,6 @@ int send_file(const char *const filename, const Config *const config,
                 }
                 else // File size is a multiple of blocksize * windowsize
                 {
-                    printf("send %ld bytes with prev\t", prev_bytes_read + 1);
                     if (send_window(prev_buf, prev_bytes_read, client_addr,
                                     client_addr_len, 1, config,
                                     &initial_sequence_number) < 0)
@@ -257,7 +256,6 @@ int send_file(const char *const filename, const Config *const config,
             // blocksize * windowsize
             else
             {
-                printf("send %ld bytes with prev\t", prev_bytes_read);
                 if (send_window(prev_buf, prev_bytes_read, client_addr,
                                 client_addr_len, 0, config,
                                 &initial_sequence_number) < 0)
@@ -266,7 +264,6 @@ int send_file(const char *const filename, const Config *const config,
                     return -1;
                 }
 
-                printf("send %ld bytes with curr\t", curr_bytes_read);
                 if (send_window(curr_buf, curr_bytes_read, client_addr,
                                 client_addr_len, 1, config,
                                 &initial_sequence_number) < 0)
@@ -279,11 +276,11 @@ int send_file(const char *const filename, const Config *const config,
             break;
         }
 
-        printf("send %ld bytes with prev", prev_bytes_read);
         send_window(prev_buf, prev_bytes_read, client_addr, client_addr_len, 0,
                     config, &initial_sequence_number);
 
-        printf("\n");
+        prev_bytes_read = curr_bytes_read;
+        memcpy(prev_buf, curr_buf, curr_bytes_read * sizeof(uint8_t));
     }
 
     fclose(file);
@@ -319,8 +316,6 @@ int run(const Config *const config)
             perror("access");
             continue;
         }
-
-        printf("Received request for file %s\n", filename);
 
         fflush(stdout);
         const pid_t pid = fork();
