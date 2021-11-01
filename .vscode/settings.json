@@ -26,7 +26,8 @@
     "array": "c",
     "string": "c",
     "string_view": "c",
-    "netdb.h": "c"
+    "netdb.h": "c",
+    "roadrunner_client.h": "c"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
