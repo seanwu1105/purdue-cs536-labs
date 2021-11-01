@@ -109,8 +109,8 @@ int run(const Config *const config, const PublicKey public_keys[],
                          &client_addr_len) < 0)
             continue;
 
-        if (check_access(&client_addr, received_pubkey, public_keys,
-                         num_public_keys))
+        if (!check_access(&client_addr, received_pubkey, public_keys,
+                          num_public_keys))
         {
             fprintf(stderr, "Access denied: bad certificate\n");
             continue;
