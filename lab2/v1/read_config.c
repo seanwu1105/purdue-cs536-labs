@@ -5,7 +5,7 @@
 
 #define BUFFER_SIZE 128
 
-int sanitize_paramter(const int param)
+int sanitize_parameter(const int param)
 {
     if (param < 0 || (param > 5 && param != 99)) return -1;
     return 0;
@@ -24,23 +24,28 @@ int read_config(Config *const config)
     const size_t bytes_read =
         fread(content, sizeof(char), sizeof(content), file);
     fclose(file);
+    content[bytes_read] = '\0';
     if (bytes_read == 0) return -1;
 
-    const char *val = strtok(content, "  \t\n");
+    const char *val = strtok(content, "  \t\n\0");
+    if (val == NULL) return -1;
     config->num_packages = (unsigned short)strtoul(val, NULL, 0);
 
-    val = strtok(NULL, "  \t\n");
+    val = strtok(NULL, "  \t\n\0");
+    if (val == NULL) return -1;
     config->timeout = (unsigned short)strtoul(val, NULL, 0);
 
-    val = strtok(NULL, "  \t\n");
+    val = strtok(NULL, "  \t\n\0");
+    if (val == NULL) return -1;
     config->server_delay = (uint8_t)strtoul(val, NULL, 0);
 
-    val = strtok(NULL, "  \t\n");
+    val = strtok(NULL, "  \t\n\0");
+    if (val == NULL) return -1;
     config->first_sequence_num = (int32_t)strtol(val, NULL, 0);
 
-    if (sanitize_paramter(config->num_packages) == -1 ||
-        sanitize_paramter(config->timeout) == -1 ||
-        sanitize_paramter(config->first_sequence_num) == -1)
+    if (sanitize_parameter(config->num_packages) == -1 ||
+        sanitize_parameter(config->timeout) == -1 ||
+        sanitize_parameter(config->first_sequence_num) == -1)
     {
         fprintf(stderr, "invalid parameter: N=%hu, T=%hu, S=%d. %s\n",
                 config->num_packages, config->timeout,

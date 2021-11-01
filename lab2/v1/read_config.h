@@ -16,7 +16,7 @@ typedef struct
     int32_t first_sequence_num;  // 4 bytes
 } Config;
 
-int sanitize_paramter(const int param);
+int sanitize_parameter(const int param);
 
 int read_config(Config *const config);
 

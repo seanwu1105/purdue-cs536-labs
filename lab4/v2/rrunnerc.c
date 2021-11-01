@@ -81,8 +81,8 @@ int request_file(const struct addrinfo *const server_info,
     get_udp_host_ip(sockfd, server_info, &ip);
     uint32_t certificate = bbdecode(ip, private_key);
 
-    uint8_t request[REQUEST_SIZE_WITH_CERTIFICATION];
-    encode_request_with_certification(config->filename, certificate, request);
+    uint8_t request[REQUEST_SIZE_WITH_CERTIFICATE];
+    encode_request_with_certificate(config->filename, certificate, request);
     if (sendto(sockfd, request, sizeof(request), 0, server_info->ai_addr,
                server_info->ai_addrlen) < 0)
     {

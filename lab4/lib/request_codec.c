@@ -26,24 +26,24 @@ void decode_request_with_secret_key(const uint8_t *const message,
     filename[MAX_FILENAME_LEN] = '\0';
 }
 
-void encode_request_with_certification(const char *const filename,
-                                       const uint32_t certification,
-                                       uint8_t *const message)
+void encode_request_with_certificate(const char *const filename,
+                                     const uint32_t certificate,
+                                     uint8_t *const message)
 {
-    *((uint32_t *)message) = certification;
-    strncpy((char *)(message +
-                     (REQUEST_SIZE_WITH_CERTIFICATION - MAX_FILENAME_LEN)),
-            filename, MAX_FILENAME_LEN);
+    *((uint32_t *)message) = certificate;
+    strncpy(
+        (char *)(message + (REQUEST_SIZE_WITH_CERTIFICATE - MAX_FILENAME_LEN)),
+        filename, MAX_FILENAME_LEN);
 }
 
-void decode_request_with_certification(const uint8_t *const message,
-                                       char *const filename,
-                                       uint32_t *const certification)
+void decode_request_with_certificate(const uint8_t *const message,
+                                     char *const filename,
+                                     uint32_t *const certificate)
 {
-    *certification = *((uint32_t *)message);
+    *certificate = *((uint32_t *)message);
     strncpy(filename,
-            (const char *)(message + (REQUEST_SIZE_WITH_CERTIFICATION -
-                                      MAX_FILENAME_LEN)),
+            (const char *)(message +
+                           (REQUEST_SIZE_WITH_CERTIFICATE - MAX_FILENAME_LEN)),
             MAX_FILENAME_LEN);
     filename[MAX_FILENAME_LEN] = '\0';
 }

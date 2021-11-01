@@ -67,7 +67,7 @@ int run()
         uint8_t delay;
         decode_message(message, &id, &delay);
 
-        if (sanitize_paramter(delay) == -1)
+        if (sanitize_parameter(delay) == -1)
         {
             fprintf(stderr, "invalid message received: delay=%hu. %s\n", delay,
                     PARAMTER_RESTRICTION_MSG);
