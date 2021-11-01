@@ -10,9 +10,9 @@
 
 #include "../lib/arg_checkers.h"
 #include "../lib/packet_codec.h"
+#include "../lib/request_codec.h"
 #include "../lib/roadrunner_server.h"
 #include "../lib/socket_utils.h"
-#include "request_codec.h"
 
 #define REQUIRED_ARGC 7
 
@@ -84,16 +84,17 @@ int read_request(char *const filename, uint16_t *const secret_key,
                  struct sockaddr *const client_addr,
                  socklen_t *const client_addr_len)
 {
-    uint8_t request[REQUEST_SIZE];
-    const ssize_t bytes_read = recvfrom(request_sockfd, request, REQUEST_SIZE,
-                                        0, client_addr, client_addr_len);
+    uint8_t request[REQUEST_SIZE_WITH_SECRET_KEY];
+    const ssize_t bytes_read =
+        recvfrom(request_sockfd, request, REQUEST_SIZE_WITH_SECRET_KEY, 0,
+                 client_addr, client_addr_len);
     if (bytes_read == -1)
     {
         perror("read");
         return -1;
     }
 
-    decode_request(request, filename, secret_key);
+    decode_request_with_secret_key(request, filename, secret_key);
     return 0;
 }
 

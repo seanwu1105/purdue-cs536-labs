@@ -11,9 +11,9 @@
 
 #include "../lib/arg_checkers.h"
 #include "../lib/packet_codec.h"
+#include "../lib/request_codec.h"
 #include "../lib/roadrunner_client.h"
 #include "../lib/socket_utils.h"
-#include "request_codec.h"
 
 #define REQUIRED_ARGC 7
 
@@ -72,8 +72,8 @@ int parse_args(int argc, char *argv[], struct addrinfo **server_info,
 int request_file(const struct addrinfo *const server_info,
                  const Config *const config, const uint16_t secret_key)
 {
-    uint8_t request[REQUEST_SIZE];
-    encode_request(config->filename, secret_key, request);
+    uint8_t request[REQUEST_SIZE_WITH_SECRET_KEY];
+    encode_request_with_secret_key(config->filename, secret_key, request);
     if (sendto(sockfd, request, sizeof(request), 0, server_info->ai_addr,
                server_info->ai_addrlen) < 0)
     {
