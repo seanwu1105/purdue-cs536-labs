@@ -31,7 +31,11 @@ static void sigint_handler(int _)
     exit(EXIT_SUCCESS);
 }
 
-static void sigalrm_handler(int _) { return; }
+static void sigalrm_handler(int _)
+{
+    fprintf(stdout, "Timeout\n");
+    return;
+}
 
 int parse_args(int argc, char *argv[], struct addrinfo **server_info,
                Config *const config, uint16_t *const secret_key)
