@@ -155,3 +155,15 @@ secret-key in `rrunners`'s command-line argument since it is not needed. Test
 and verify that roadrunner with improved authentication support works correctly.
 Check if there is any degradation of throughput due to performing
 encryption/decryption
+
+### Analysis
+
+The completion time of `v1` (without XOR authentication) and `v2` (with XOR
+authentication) are almost identical since we only add an XOR operation before
+file transmission, which is trivial for performance.
+
+| window size | completion time (s) |
+| ----------- | ------------------- |
+| 1           | 3.845               |
+| 2           | 2.426               |
+| 4           | 1.773               |
