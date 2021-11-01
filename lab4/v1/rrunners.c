@@ -129,12 +129,6 @@ int send_window(const uint8_t *const data, const size_t data_size,
                 const Config *const config,
                 uint8_t *const initial_sequence_number)
 {
-    printf("send window: ");
-    for (size_t i = 0; i < data_size; i++)
-    {
-        printf("%c", data[i]);
-    }
-    printf("\n");
     while (1)
     {
         uint8_t sequence_number = *initial_sequence_number;
@@ -175,8 +169,10 @@ int send_window(const uint8_t *const data, const size_t data_size,
 
         // Start ACK timeout timer
         setitimer(ITIMER_REAL,
-                  &(struct itimerval){{0, config->timeout_usec},
-                                      {0, config->timeout_usec}},
+                  &(struct itimerval){{config->timeout_usec / 1000000,
+                                       config->timeout_usec % 1000000},
+                                      {config->timeout_usec / 1000000,
+                                       config->timeout_usec % 1000000}},
                   NULL);
 
         int ack_status = receive_ack_and_cancel_timeout(sequence_number - 1);
