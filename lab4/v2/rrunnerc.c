@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "../lib/arg_checkers.h"
+#include "../lib/bbcodec.h"
 #include "../lib/packet_codec.h"
 #include "../lib/request_codec.h"
 #include "../lib/roadrunner_client.h"
@@ -34,13 +35,13 @@ static void sigint_handler(int _)
 static void sigalrm_handler(int _) { return; }
 
 int parse_args(int argc, char *argv[], struct addrinfo **server_info,
-               Config *const config, uint16_t *const secret_key)
+               Config *const config, uint32_t *const private_key)
 {
     if (argc < REQUIRED_ARGC)
     {
         fprintf(stderr,
                 "Usage: %s <server_ip> <server_port> <filename> "
-                "<secret_key> <blocksize> <windowsize>\n",
+                "<private_key> <blocksize> <windowsize>\n",
                 argv[0]);
         return -1;
     }
@@ -54,9 +55,13 @@ int parse_args(int argc, char *argv[], struct addrinfo **server_info,
     config->filename = argv[3];
     if ((status = check_filename(config->filename)) != 0) return status;
 
-    long long s_key = strtoull(argv[4], NULL, 0);
-    if ((status = check_secret_key(s_key)) != 0) return status;
-    *secret_key = (uint16_t)s_key;
+    long long prikey = strtoull(argv[4], NULL, 0);
+    if (prikey > UINT32_MAX)
+    {
+        fprintf(stderr, "Private key is too large\n");
+        return -1;
+    }
+    *private_key = (uint32_t)prikey;
 
     long long blocksize = strtoull(argv[5], NULL, 0);
     if ((status = check_blocksize(blocksize)) != 0) return status;
@@ -70,10 +75,14 @@ int parse_args(int argc, char *argv[], struct addrinfo **server_info,
 }
 
 int request_file(const struct addrinfo *const server_info,
-                 const Config *const config, const uint16_t secret_key)
+                 const Config *const config, const uint32_t private_key)
 {
+    uint32_t ip;
+    get_udp_host_ip(sockfd, server_info, &ip);
+    uint32_t certificate = bbdecode(ip, private_key);
+
     uint8_t request[REQUEST_SIZE_WITH_CERTIFICATION];
-    encode_request_with_certification(config->filename, secret_key, request);
+    encode_request_with_certification(config->filename, certificate, request);
     if (sendto(sockfd, request, sizeof(request), 0, server_info->ai_addr,
                server_info->ai_addrlen) < 0)
     {
@@ -85,7 +94,7 @@ int request_file(const struct addrinfo *const server_info,
 }
 
 int run(const struct addrinfo *const server_info, const Config *const config,
-        const uint16_t secret_key)
+        const uint32_t private_key)
 {
     // Check if file exists
     if (access(config->filename, F_OK) == 0)
@@ -97,7 +106,7 @@ int run(const struct addrinfo *const server_info, const Config *const config,
     // Request file
     while (1)
     {
-        request_file(server_info, config, secret_key);
+        request_file(server_info, config, private_key);
         // Start request timeout timer
         setitimer(ITIMER_REAL,
                   &(struct itimerval){{0, FILE_REQUEST_TIMEOUT_MS * 1000},
@@ -120,14 +129,14 @@ int main(int argc, char *argv[])
 
     struct addrinfo *server_info;
     Config config;
-    uint16_t secret_key;
-    if (parse_args(argc, argv, &server_info, &config, &secret_key) != 0)
+    uint32_t private_key;
+    if (parse_args(argc, argv, &server_info, &config, &private_key) != 0)
         return -1;
 
     if ((sockfd = create_socket_with_first_usable_addr(server_info)) == -1)
         return -1;
 
-    int status = run(server_info, &config, secret_key);
+    int status = run(server_info, &config, private_key);
 
     tear_down();
 

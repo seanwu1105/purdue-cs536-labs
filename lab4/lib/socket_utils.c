@@ -12,6 +12,7 @@ int build_addrinfo(struct addrinfo **info, const char *const ip,
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET; // IPv4
     hints.ai_socktype = socktype;
+    hints.ai_flags = AI_PASSIVE;
 
     int status;
     if ((status = getaddrinfo(ip, port, &hints, info)) != 0)
@@ -65,5 +66,30 @@ int bind_socket_with_first_usable_addr(const struct addrinfo *const info,
         fprintf(stderr, "failed to bind socket.\n");
         return -1;
     }
+    return 0;
+}
+
+int get_udp_host_ip(const int sockfd, const struct addrinfo *const server_info,
+                    uint32_t *ip)
+{
+    struct addrinfo *res;
+
+    build_addrinfo(&res, NULL, "0", SOCK_DGRAM);
+
+    if (connect(sockfd, server_info->ai_addr, server_info->ai_addrlen) == -1)
+    {
+        perror("connect");
+        return -1;
+    }
+
+    if (getsockname(sockfd, res->ai_addr, &res->ai_addrlen) == -1)
+    {
+        perror("getsockname");
+        return -1;
+    }
+
+    *ip = ntohl(((struct sockaddr_in *)res->ai_addr)->sin_addr.s_addr);
+
+    freeaddrinfo(res);
     return 0;
 }
