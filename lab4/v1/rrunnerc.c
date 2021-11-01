@@ -99,7 +99,6 @@ int send_ack(const uint8_t sequence_number,
         return -1;
     }
 
-    printf("ACK sent: %d\n", sequence_number);
     return 0;
 }
 
