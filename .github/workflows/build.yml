@@ -85,3 +85,15 @@ jobs:
 
       - name: Make
         run: make
+
+  lab4_v2:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab4/v2/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Make
+        run: make
