@@ -33,7 +33,7 @@ static void sigint_handler(int _)
 
 static void sigalrm_handler(int _)
 {
-    printf("timeout\n");
+    printf("Timeout\n");
     return;
 }
 
@@ -183,6 +183,8 @@ int send_window(const uint8_t *const data, const size_t data_size,
             return -1;
     }
 
+    printf("Sent %zu bytes with ACK\n", data_size);
+
     *initial_sequence_number =
         (*initial_sequence_number + config->windowsize) %
         (SEQUENCE_NUMBER_SPACE_TO_WINDOWSIZE_RATIO * config->windowsize);
@@ -268,7 +270,6 @@ int send_file(const char *const filename, const Config *const config,
                     return -1;
                 }
             }
-            printf("EOF\n");
             break;
         }
 
@@ -280,6 +281,8 @@ int send_file(const char *const filename, const Config *const config,
     }
 
     fclose(file);
+
+    printf("Transmission completed\n");
 
     return 0;
 }

@@ -92,13 +92,14 @@ int send_ack(const uint8_t sequence_number,
              const struct sockaddr *const server_addr,
              const socklen_t server_addr_len)
 {
-    printf("Send ACK %d\n", sequence_number);
     if (sendto(sockfd, &sequence_number, sizeof(sequence_number), 0,
                server_addr, server_addr_len) < 0)
     {
         perror("sendto");
         return -1;
     }
+
+    printf("ACK sent: %d\n", sequence_number);
     return 0;
 }
 
@@ -144,7 +145,6 @@ int receive_window_and_cancel_timeout(const Config *const config,
     ssize_t bytes_read;
     struct sockaddr server_addr;
     socklen_t server_addr_len = sizeof(server_addr);
-    printf("wait receiving...\n");
     while ((bytes_read = recvfrom(sockfd, buffer, sizeof(buffer), 0,
                                   &server_addr, &server_addr_len)) > 0)
     {
@@ -156,11 +156,6 @@ int receive_window_and_cancel_timeout(const Config *const config,
                                : bytes_read - 1;
         uint8_t block[blocksize];
         decode_packet(buffer, &num, sizeof(block), block);
-        printf("num: %d\t", num);
-        printf("sizeof_block: %ld\t", sizeof(block));
-        for (size_t i = 0; i < blocksize; i++)
-            printf("%c", block[i]);
-        printf("\n");
 
         if (num < initial_sequence_number)
         {
