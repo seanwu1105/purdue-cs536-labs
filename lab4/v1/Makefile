@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -g -Wall
-OBJECTS = rrunnerc.o rrunners.o ../lib/roadrunner_client.o socket_utils.o ../lib/arg_checkers.o request_codec.o ../lib/packet_codec.o
+OBJECTS = rrunnerc.o rrunners.o ../lib/roadrunner_client.o ../lib/roadrunner_server.o socket_utils.o ../lib/arg_checkers.o request_codec.o ../lib/packet_codec.o
 
 .PHONY: all
 all: rrunnerc rrunners
@@ -8,7 +8,7 @@ all: rrunnerc rrunners
 rrunnerc: rrunnerc.o ../lib/socket_utils.o ../lib/arg_checkers.o request_codec.o ../lib/packet_codec.o ../lib/roadrunner_client.o
 	$(CC) -o $@ $^
 
-rrunners: rrunners.o ../lib/socket_utils.o ../lib/arg_checkers.o request_codec.o ../lib/packet_codec.o
+rrunners: rrunners.o ../lib/socket_utils.o ../lib/arg_checkers.o request_codec.o ../lib/packet_codec.o ../lib/roadrunner_server.o
 	$(CC) -o $@ $^
 
 $(OBJECTS): %.o: %.c

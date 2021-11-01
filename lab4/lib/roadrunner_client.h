@@ -1,3 +1,6 @@
+#if !defined(_ROADRUNNER_CLIENT_H_)
+#define _ROADRUNNER_CLIENT_H_
+
 #include <stdint.h>
 #include <sys/socket.h>
 
@@ -7,7 +10,6 @@
 typedef struct
 {
     const char *filename;
-    // uint16_t secret_key;
     uint16_t blocksize; // <= 1471
     uint8_t windowsize; // <= 63
 } Config;
@@ -27,3 +29,5 @@ int receive_window_and_cancel_timeout(const int sockfd,
 
 int receive_file_and_cancel_timeout(const int sockfd,
                                     const Config *const config);
+
+#endif // _ROADRUNNER_CLIENT_H_

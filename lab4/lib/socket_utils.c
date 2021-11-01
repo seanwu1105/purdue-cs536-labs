@@ -1,8 +1,9 @@
-#include "socket_utils.h"
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "socket_utils.h"
 
 int build_addrinfo(struct addrinfo **info, const char *const ip,
                    const char *const port, const int socktype)

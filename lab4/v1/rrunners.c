@@ -10,11 +10,11 @@
 
 #include "../lib/arg_checkers.h"
 #include "../lib/packet_codec.h"
+#include "../lib/roadrunner_server.h"
 #include "../lib/socket_utils.h"
 #include "request_codec.h"
 
 #define REQUIRED_ARGC 7
-#define DUMMY_END_OF_PACKET 255
 
 int request_sockfd = -1;
 int packet_sockfd = -1;
@@ -23,6 +23,8 @@ void tear_down()
 {
     close(request_sockfd);
     close(packet_sockfd);
+    request_sockfd = -1;
+    packet_sockfd = -1;
 }
 
 static void sigint_handler(int _)
@@ -37,16 +39,8 @@ static void sigalrm_handler(int _)
     return;
 }
 
-typedef struct
-{
-    uint16_t secret_key;
-    uint16_t blocksize; // <= 1471
-    uint8_t windowsize; // <= 63
-    unsigned long long timeout_usec;
-} Config;
-
 int parse_args(int argc, char *argv[], struct addrinfo **server_info,
-               Config *const config)
+               Config *const config, uint16_t *const secret_key)
 {
     if (argc < REQUIRED_ARGC)
     {
@@ -63,9 +57,9 @@ int parse_args(int argc, char *argv[], struct addrinfo **server_info,
         0)
         return status;
 
-    long long secret_key = strtoull(argv[3], NULL, 0);
-    if ((status = check_secret_key(secret_key)) != 0) return status;
-    config->secret_key = (uint16_t)secret_key;
+    long long s_key = strtoull(argv[3], NULL, 0);
+    if ((status = check_secret_key(s_key)) != 0) return status;
+    *secret_key = (uint16_t)s_key;
 
     long long blocksize = strtoull(argv[4], NULL, 0);
     if ((status = check_blocksize(blocksize)) != 0) return status;
@@ -103,205 +97,23 @@ int read_request(char *const filename, uint16_t *const secret_key,
     return 0;
 }
 
-int receive_ack_and_cancel_timeout(const uint8_t expected)
-{
-    while (1)
-    {
-        uint8_t ack;
-        if (recvfrom(packet_sockfd, &ack, sizeof(ack), 0, NULL, NULL) < 0)
-        {
-            if (errno != EINTR) perror("recvfrom");
-            return -1;
-        }
-
-        if (ack == expected)
-        {
-            setitimer(ITIMER_REAL, 0, NULL); // Cancel ack timout timer
-            break;
-        }
-    }
-    return 0;
-}
-
-int send_window(const uint8_t *const data, const size_t data_size,
-                const struct sockaddr *const client_addr,
-                const socklen_t client_addr_len, const int is_eof,
-                const Config *const config,
-                uint8_t *const initial_sequence_number)
-{
-    while (1)
-    {
-        uint8_t sequence_number = *initial_sequence_number;
-        size_t block_index = 0;
-        if ((packet_sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-        {
-            perror("socket");
-            return -1;
-        }
-
-        while (block_index < data_size)
-        {
-            size_t blocksize = data_size - block_index < config->blocksize
-                                   ? data_size - block_index
-                                   : config->blocksize;
-            uint8_t block_data[blocksize];
-            memcpy(block_data, data + block_index, blocksize * sizeof(uint8_t));
-
-            unsigned short need_to_append_dummy =
-                is_eof && (block_index + config->blocksize) == data_size;
-
-            uint8_t packet[1 + blocksize + (need_to_append_dummy ? 1 : 0)];
-            encode_packet(sequence_number, block_data, blocksize, packet);
-            if (need_to_append_dummy)
-                packet[blocksize + 1] = DUMMY_END_OF_PACKET;
-
-            if (sendto(packet_sockfd, packet, sizeof(packet), 0, client_addr,
-                       client_addr_len) == -1)
-            {
-                close(packet_sockfd);
-                perror("sendto");
-                return -1;
-            }
-
-            sequence_number++;
-            block_index += config->blocksize;
-        }
-
-        // Start ACK timeout timer
-        setitimer(ITIMER_REAL,
-                  &(struct itimerval){{config->timeout_usec / 1000000,
-                                       config->timeout_usec % 1000000},
-                                      {config->timeout_usec / 1000000,
-                                       config->timeout_usec % 1000000}},
-                  NULL);
-
-        int ack_status = receive_ack_and_cancel_timeout(sequence_number - 1);
-        close(packet_sockfd);
-        if (ack_status == 0)
-            break;
-        else if (errno != EINTR)
-            return -1;
-    }
-
-    *initial_sequence_number =
-        (*initial_sequence_number + config->windowsize) %
-        (SEQUENCE_NUMBER_SPACE_TO_WINDOWSIZE_RATIO * config->windowsize);
-    return 0;
-}
-
-int send_file(const char *const filename, const Config *const config,
-              const struct sockaddr *const client_addr,
-              const socklen_t client_addr_len)
-{
-    FILE *const file = fopen(filename, "r");
-    if (file == NULL)
-    {
-        perror("fopen");
-        return -1;
-    }
-
-    uint8_t prev_buf[config->blocksize * config->windowsize];
-    uint8_t curr_buf[config->blocksize * config->windowsize];
-    size_t prev_bytes_read;
-    size_t curr_bytes_read;
-    prev_bytes_read = fread(prev_buf, sizeof(uint8_t), sizeof(prev_buf), file);
-    if (ferror(file))
-    {
-        perror("fread");
-        fclose(file);
-        return -1;
-    }
-
-    uint8_t initial_sequence_number = 0;
-    while (1)
-    {
-        curr_bytes_read =
-            fread(curr_buf, sizeof(uint8_t), sizeof(curr_buf), file);
-        if (ferror(file))
-        {
-            perror("fread");
-            fclose(file);
-            return -1;
-        }
-        if (feof(file))
-        {
-            if (curr_bytes_read == 0)
-                if (prev_bytes_read < config->blocksize * config->windowsize)
-                // File size is zero or smaller than blocksize * windowsize
-                {
-                    if (send_window(prev_buf, prev_bytes_read, client_addr,
-                                    client_addr_len, 1, config,
-                                    &initial_sequence_number) < 0)
-                    {
-                        fclose(file);
-                        return -1;
-                    }
-                }
-                else // File size is a multiple of blocksize * windowsize
-                {
-                    if (send_window(prev_buf, prev_bytes_read, client_addr,
-                                    client_addr_len, 1, config,
-                                    &initial_sequence_number) < 0)
-                    {
-                        fclose(file);
-                        return -1;
-                    }
-                }
-
-            // File size is larger than blocksize and not a multiple of
-            // blocksize * windowsize
-            else
-            {
-                if (send_window(prev_buf, prev_bytes_read, client_addr,
-                                client_addr_len, 0, config,
-                                &initial_sequence_number) < 0)
-                {
-                    fclose(file);
-                    return -1;
-                }
-
-                if (send_window(curr_buf, curr_bytes_read, client_addr,
-                                client_addr_len, 1, config,
-                                &initial_sequence_number) < 0)
-                {
-                    fclose(file);
-                    return -1;
-                }
-            }
-            break;
-        }
-
-        send_window(prev_buf, prev_bytes_read, client_addr, client_addr_len, 0,
-                    config, &initial_sequence_number);
-
-        prev_bytes_read = curr_bytes_read;
-        memcpy(prev_buf, curr_buf, curr_bytes_read * sizeof(uint8_t));
-    }
-
-    fclose(file);
-
-    fprintf(stdout, "Transmission completed\n");
-
-    return 0;
-}
-
-int run(const Config *const config)
+int run(const Config *const config, const uint16_t secret_key)
 {
     while (1)
     {
         // Accept file request
-        uint16_t secret_key;
+        uint16_t received_secret_key;
         char filename[MAX_FILENAME_LEN + 1];
         struct sockaddr client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
-        if (read_request(filename, &secret_key, &client_addr,
+        if (read_request(filename, &received_secret_key, &client_addr,
                          &client_addr_len) < 0)
             continue;
 
-        if (config->secret_key != secret_key)
+        if (secret_key != received_secret_key)
         {
-            fprintf(stderr, "Secret key mismatch: %hu != %hu\n",
-                    config->secret_key, secret_key);
+            fprintf(stderr, "Secret key mismatch: %hu != %hu\n", secret_key,
+                    received_secret_key);
             continue;
         }
 
@@ -320,7 +132,8 @@ int run(const Config *const config)
         {
             // Child process
             close(request_sockfd);
-            if (send_file(filename, config, &client_addr, client_addr_len) < 0)
+            if (send_file(&packet_sockfd, filename, config, &client_addr,
+                          client_addr_len) < 0)
                 exit(EXIT_FAILURE);
             exit(EXIT_SUCCESS);
         }
@@ -337,7 +150,9 @@ int main(int argc, char *argv[])
 
     struct addrinfo *server_info;
     Config config;
-    if (parse_args(argc, argv, &server_info, &config) != 0) return -1;
+    uint16_t secret_key;
+    if (parse_args(argc, argv, &server_info, &config, &secret_key) != 0)
+        return -1;
 
     if ((request_sockfd = create_socket_with_first_usable_addr(server_info)) ==
         -1)
@@ -349,5 +164,5 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    return run(&config);
+    return run(&config, secret_key);
 }
