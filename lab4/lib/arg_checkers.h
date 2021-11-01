@@ -1,6 +1,7 @@
 #if !defined(_ARG_CHECKERS_H_)
 #define _ARG_CHECKERS_H_
 
+#define MAX_FILENAME_LEN 8
 #define MIN_SECRET_KEY 0
 #define MAX_SECRET_KEY 65535
 #define MIN_BLOCKSIZE 1

@@ -9,6 +9,5 @@ void decode_request(const uint8_t *const message, char *const filename,
                     uint16_t *const secret_key);
 
 #define REQUEST_SIZE 10
-#define MAX_FILENAME_LEN 8
 
 #endif // _REQUEST_CODEC_H_

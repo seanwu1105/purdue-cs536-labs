@@ -1,5 +1,4 @@
 #include "arg_checkers.h"
-#include "request_codec.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
