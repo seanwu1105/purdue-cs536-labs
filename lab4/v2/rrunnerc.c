@@ -78,7 +78,7 @@ int request_file(const struct addrinfo *const server_info,
                  const Config *const config, const uint32_t private_key)
 {
     uint32_t ip;
-    get_udp_host_ip(sockfd, server_info, &ip);
+    get_udp_host_ip(server_info, &ip);
     uint32_t certificate = bbdecode(ip, private_key);
 
     uint8_t request[REQUEST_SIZE_WITH_CERTIFICATE];
