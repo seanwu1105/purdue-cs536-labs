@@ -124,6 +124,84 @@ in `v1/`. Include `README` under `v1/` that specifies the files and functions of
 your code, and a brief description of their roles. Remove large files created
 for testing after completion.
 
+## Getting Started
+
+Build `rrunners` and `rrunnerc` with the `make` command in the `/v1` directory.
+
+```sh
+make
+```
+
+Start the server first to get ready for accepting remote commands.
+
+```sh
+./rrunners <server-ip> <server-port> <secret-key> <blocksize> <windowsize> <timeout>
+```
+
+After the server is running, start the new client in another machine.
+
+```sh
+./rrunnerc <server-ip> <server-port> <filename> <secret-key> <blocksize>
+```
+
+To stop a running ftp server or client, send `SIGINT` with <kbd>ctrl</kbd> +
+<kbd>c</kbd> on Linux.
+
+## Create Dummy Test Files
+
+Use `fallocate` to create test files.
+
+```sh
+fallocate -l 10M ./test
+```
+
+If the `fallocate` is not supported on the file system, use `truncate` instead.
+
+```sh
+truncate -s 10M ./test
+```
+
+## Project Structure
+
+### `rrunnerc.c`
+
+The source of `rrunnerc`.
+
+If the input arguments are malformed (see spec in instruction mentioned above),
+`rrunnerc` will reject the command.
+
+### `rrunners.c`
+
+The source of `rrunners`. The following conditions will ignore the incoming file
+request:
+
+- Secret key mismatch.
+- The parameters in request are malformed (see spec in instruction mentioned
+  above).
+- Requested file does not exist.
+
+### `arg_checkers.c`
+
+Contains two checking functions to check if the arguments (filename and secret
+key) follows the spec.
+
+### `request_codec.c`
+
+Provides functionality to encodes request message from filename and secret and
+vice versa. Note that the total length of request is fixed to 10 bytes.
+
+### `socket_utils.c`
+
+Provides shared functionality to build, create, bind and connect socket-related
+data structure used by both client and server.
+
+### `packet_codec.c`
+
+Provides functionality to encode and decode packet from partitioned file data
+(block data) and sequence number, and vice versa.
+
+## Analysis
+
 ### `rrunner` vs `myftp`
 
 We use the following commands for `rrunner` benchmark. We run the server on

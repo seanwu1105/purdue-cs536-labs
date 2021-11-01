@@ -75,13 +75,13 @@ make
 Start the server first to get ready for accepting remote commands.
 
 ```sh
-./myftps <server-ip> <server-port> <filename> <secret-key> <blocksize-byte>
+./myftps <server-ip> <server-port> <secret-key> <blocksize-byte>
 ```
 
 After the server is running, start the new client in another machine.
 
 ```sh
-./myftpc <server-ip> <server-port> <secret-key> <blocksize-byte>
+./myftpc <server-ip> <server-port> <filename> <secret-key> <blocksize-byte>
 ```
 
 To stop a running ftp server or client, send `SIGINT` with <kbd>ctrl</kbd> +
@@ -133,7 +133,7 @@ will disconnect the TCP connection immediately:
   above).
 - Client address is not in white list (see the allow list in instruction
   mentioned above).
-- Requested does not exist.
+- Requested file does not exist.
 - Randomly (50% chance) ignore the request.
 
 ### `arg_checkers.c`
