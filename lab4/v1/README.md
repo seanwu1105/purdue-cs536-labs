@@ -123,3 +123,90 @@ completion times should be in the 2-3 second range. Discuss your results in
 in `v1/`. Include `README` under `v1/` that specifies the files and functions of
 your code, and a brief description of their roles. Remove large files created
 for testing after completion.
+
+### `rrunner` vs `myftp`
+
+We use the following commands for `rrunner` benchmark. We run the server on
+`amber05.cs.purdue.edu` (`128.10.112.135`).
+
+```sh
+./rrunners 128.10.112.135 22222 123 <block-size> <window-size> 1000000
+```
+
+And we run the client on: `amber06.cs.purdue.edu` (`128.10.112.136`)
+
+```sh
+./rrunnerc 128.10.112.135 22222 test_file 123 <block-size> <window-size>
+```
+
+We set the window size to 1 and 32 for comparison.
+
+#### `myftp`
+
+| blocksize | 64K bytes file throughput (bytes/ms) | 64K bytes file completion time (ms) | 64M bytes file throughput (bytes/ms) | 64M bytes file completion time (ms) |
+| --------- | ------------------------------------ | ----------------------------------- | ------------------------------------ | ----------------------------------- |
+| 512       | 480.2333165                          | 136.467                             | 715.7628418                          | 93758.519                           |
+| 1024      | 798.6546102                          | 82.058                              | 1254.796654                          | 53481.864                           |
+| 1471      | 1064.017015                          | 61.593                              | 1586.591925                          | 42297.495                           |
+
+#### `rrunner`, `W=1`
+
+| blocksize | 64K bytes file throughput (bytes/ms) | 64K bytes file completion time (ms) | 64M bytes file throughput (bytes/ms) | 64M bytes file completion time (ms) |
+| --------- | ------------------------------------ | ----------------------------------- | ------------------------------------ | ----------------------------------- |
+| 512       | 377.4571634                          | 173.625                             | 383.7349636                          | 174883.371                          |
+| 1024      | 642.7870846                          | 101.956                             | 760.1632465                          | 88282.174                           |
+| 1471      | 780.0697511                          | 84.013                              | 1148.341427                          | 58439.818                           |
+
+#### `rrunner`, `W=32`
+
+| blocksize | 64K bytes file throughput (bytes/ms) | 64K bytes file completion time (ms) | 64M bytes file throughput (bytes/ms) | 64M bytes file completion time (ms) |
+| --------- | ------------------------------------ | ----------------------------------- | ------------------------------------ | ----------------------------------- |
+| 512       | 2394.883976                          | 27.365                              | 124.2452503                          | 540132.229                          |
+| 1024      | 5283.882932                          | 12.403                              | 223.6014495                          | 300127.142                          |
+| 1471      | 5891.405969                          | 11.124                              | 278.8880449                          | 240630.121                          |
+
+The network status is unstable and thus `rrunner` has worse performance than
+`myftp` as multiple packets are dropped during the transmission. However, for
+small file size (64K bytes), since the number of dropped packets has
+significantly smaller, the performance is better than `myftp`.
+
+There is another big factor for the completion time and throughput: network file
+system. All lab machines use network file system to access the user data. Thus,
+if the file system is busy or the connection is heavily loaded, the throughput
+in the statistics above will decreases significantly.
+
+### Performance with Different Window Sizes
+
+We use the following commands for `rrunner` benchmark. We use the same machines
+mentioned above.
+
+For the server, we run:
+
+```sh
+./rrunners 128.10.112.135 22222 123 1024 <window-size> 1000000
+```
+
+For the client, we run:
+
+```sh
+./rrunnerc 128.10.112.135 22222 test_file 123 1024 <window-size>
+```
+
+We transfer a 10 M bytes file with 1, 2, 4, 8, 12, 16, 20 window sizes.
+
+| window size | throughput (bytes/s) | completion time (s) |
+| ----------- | -------------------- | ------------------- |
+| 1           | 273.9432852          | 3.738               |
+| 2           | 421.7462932          | 2.428               |
+| 4           | 595.0029053          | 1.721               |
+| 8           | 912.6559715          | 1.122               |
+| 12          | 292.0707359          | 3.506               |
+| 16          | 222.6570994          | 4.599               |
+| 20          | 166.1528476          | 6.163               |
+
+As the window size increases, the penalty increases on UDP packets dropped.
+Thus, the best window size is approximately 8 and the throughput could reach
+912.655 bytes/s.
+
+The load of network file system is still a big factor for above statistics. Any
+network congestion would heavily impact the throughput and completion time.
