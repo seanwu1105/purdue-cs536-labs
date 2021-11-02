@@ -214,7 +214,7 @@ We use the following commands for `rrunner` benchmark. We run the server on
 And we run the client on: `amber06.cs.purdue.edu` (`128.10.112.136`)
 
 ```sh
-./rrunnerc 128.10.112.135 22222 test_file 123 <block-size> <window-size>
+./rrunnerc 128.10.112.135 22222 testf 123 <block-size> <window-size>
 ```
 
 We set the window size to 1 and 32 for comparison.
@@ -267,7 +267,7 @@ For the server, we run:
 For the client, we run:
 
 ```sh
-./rrunnerc 128.10.112.135 22222 test_file 123 1024 <window-size>
+./rrunnerc 128.10.112.135 22222 testf 123 1024 <window-size>
 ```
 
 We transfer a 10 M bytes file with 1, 2, 4, 8, 12, 16, 20 window sizes.
