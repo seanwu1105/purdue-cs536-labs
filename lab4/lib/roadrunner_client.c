@@ -99,6 +99,8 @@ int receive_window_and_cancel_timeout(const int sockfd,
             continue;
         }
 
+        if (prikey != NULL) bbdecode_data(block, blocksize, *prikey);
+
         received_sequence_numbers[num - initial_sequence_number] = 1;
         memcpy(window_data[num - initial_sequence_number], block, blocksize);
 
@@ -119,10 +121,6 @@ int receive_window_and_cancel_timeout(const int sockfd,
         if (completed)
         {
             uint8_t windowsize = last_num - initial_sequence_number + 1;
-
-            if (prikey != NULL)
-                bbdecode_data((uint8_t *)window_data, windowsize, *prikey);
-
             if (append_window_to_file((uint8_t *)window_data, windowsize,
                                       blocksize, config) < 0)
                 return -1;
