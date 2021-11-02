@@ -180,22 +180,41 @@ request:
   above).
 - Requested file does not exist.
 
-### `arg_checkers.c`
+### `lib/roadrunner_client.c`
+
+Provide client functions for all shared features across `v1`, `v2` and `v3`. We
+extract common functions to reduce code duplicates. Some optional functionality
+(e.g. `bbencode` and `bbdecode`) are disabled by setting the corresponding
+parameters to `NULL`. For example, in `v1`, there is no `pubkey` and `prikey`,
+and thus all parameters regarding these variables, such as the
+`const uint32_t *const prikey` of `receive_file_and_cancel_timeout` function, is
+set to `NULL`.
+
+### `lib/roadrunner_server.c`
+
+Provide server functions for all shared features across `v1`, `v2` and `v3`. We
+extract common functions to reduce code duplicates. Some optional functionality
+(e.g. `bbencode` and `bbdecode`) are disabled by setting the corresponding
+parameters to `NULL`. For example, in `v1`, there is no `pubkey` and `prikey`,
+and thus all parameters regarding these variables, such as the
+`const uint32_t *const pubkey` of `send_file` function, is set to `NULL`.
+
+### `lib/arg_checkers.c`
 
 Contains two checking functions to check if the arguments (filename and secret
 key) follows the spec.
 
-### `request_codec.c`
+### `lib/request_codec.c`
 
 Provides functionality to encodes request message from filename and secret and
 vice versa. Note that the total length of request is fixed to 10 bytes.
 
-### `socket_utils.c`
+### `lib/socket_utils.c`
 
 Provides shared functionality to build, create, bind and connect socket-related
 data structure used by both client and server.
 
-### `packet_codec.c`
+### `lib/packet_codec.c`
 
 Provides functionality to encode and decode packet from partitioned file data
 (block data) and sequence number, and vice versa.

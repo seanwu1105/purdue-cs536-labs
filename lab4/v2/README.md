@@ -156,7 +156,78 @@ and verify that roadrunner with improved authentication support works correctly.
 Check if there is any degradation of throughput due to performing
 encryption/decryption
 
-### Analysis
+## Getting Started
+
+Build `rrunners` and `rrunnerc` with the `make` command in the `/v1` directory.
+
+```sh
+make
+```
+
+Before start the server, we need to make sure the client is in the whitelist.
+Edit `acl.dat` in the following format.
+
+```txt
+<client-ip> <public-key>
+<client-ip> <public-key>
+...
+```
+
+Since we use XOR for simple encryption and decryption, the public key in the
+list is the same as the private key used by the client. The following is the
+sample `acl.dat` file.
+
+```txt
+192.168.1.6 123
+192.168.1.11 688
+192.168.1.5 77
+```
+
+Start the server first to get ready for accepting remote commands.
+
+```sh
+./rrunners <server-ip> <server-port> <blocksize> <windowsize> <timeout>
+```
+
+After the server is running, start the new client in another machine.
+
+```sh
+./rrunnerc <server-ip> <server-port> <filename> <private-key> <blocksize>
+```
+
+To stop a running ftp server or client, send `SIGINT` with <kbd>ctrl</kbd> +
+<kbd>c</kbd> on Linux.
+
+## Create Dummy Test Files
+
+Use `fallocate` to create test files.
+
+```sh
+fallocate -l 10M ./test
+```
+
+If the `fallocate` is not supported on the file system, use `truncate` instead.
+
+```sh
+truncate -s 10M ./test
+```
+
+## Project Structure
+
+The structure and purpose of other files can be found in `v1/README.md`.
+
+### `access_control.c`
+
+Provide functionality to load the access control list (ACL) from `acl.dat` and
+check if the given client's IP address has the access permission to request
+file. Note that the `acl.dat` is loaded immediately into the memory after the
+server starts.
+
+### `bbcodec.c`
+
+Provide toy encryption and decryption functions with XOR operator.
+
+## Analysis
 
 The completion time of `v1` (without XOR authentication) and `v2` (with XOR
 authentication) are almost identical since we only add an XOR operation before
