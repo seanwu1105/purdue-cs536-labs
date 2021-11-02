@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 
+#include "bbcodec.h"
 #include "packet_codec.h"
 #include "roadrunner_client.h"
 
@@ -53,6 +54,7 @@ int append_window_to_file(uint8_t *window_data, const uint8_t windowsize,
 int receive_window_and_cancel_timeout(const int sockfd,
                                       const Config *const config,
                                       const uint8_t initial_sequence_number,
+                                      const uint32_t *const prikey,
                                       uint8_t *const is_eof)
 {
     *is_eof = 0;
@@ -116,8 +118,12 @@ int receive_window_and_cancel_timeout(const int sockfd,
 
         if (completed)
         {
-            if (append_window_to_file((uint8_t *)window_data,
-                                      last_num - initial_sequence_number + 1,
+            uint8_t windowsize = last_num - initial_sequence_number + 1;
+
+            if (prikey != NULL)
+                bbdecode_data((uint8_t *)window_data, windowsize, *prikey);
+
+            if (append_window_to_file((uint8_t *)window_data, windowsize,
                                       blocksize, config) < 0)
                 return -1;
             break;
@@ -139,7 +145,8 @@ int receive_window_and_cancel_timeout(const int sockfd,
 }
 
 int receive_file_and_cancel_timeout(const int sockfd,
-                                    const Config *const config)
+                                    const Config *const config,
+                                    const uint32_t *const prikey)
 {
     size_t initial_sequence_number = 0;
     uint8_t is_eof = 0;
@@ -147,7 +154,7 @@ int receive_file_and_cancel_timeout(const int sockfd,
     do
     {
         if (receive_window_and_cancel_timeout(
-                sockfd, config, initial_sequence_number, &is_eof) < 0)
+                sockfd, config, initial_sequence_number, prikey, &is_eof) < 0)
             return -1;
         initial_sequence_number =
             (initial_sequence_number + config->windowsize) %

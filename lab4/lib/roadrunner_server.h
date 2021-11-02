@@ -15,15 +15,14 @@ typedef struct
 } Config;
 
 int receive_ack_and_cancel_timeout(const int sockfd, const uint8_t expected);
-int send_window(int *const sockfd, const uint8_t *const data,
-                const size_t data_size,
+int send_window(int *const sockfd, uint8_t *const data, const size_t data_size,
                 const struct sockaddr *const client_addr,
                 const socklen_t client_addr_len, const int is_eof,
-                const Config *const config,
+                const Config *const config, const uint32_t *const pubkey,
                 uint8_t *const initial_sequence_number);
 int send_file(int *const sockfd, const char *const filename,
               const Config *const config,
               const struct sockaddr *const client_addr,
-              const socklen_t client_addr_len);
+              const socklen_t client_addr_len, const uint32_t *const pubkey);
 
 #endif // _ROADRUNNER_SERVER_H_

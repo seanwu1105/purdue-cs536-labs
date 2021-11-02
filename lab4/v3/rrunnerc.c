@@ -116,7 +116,7 @@ int run(const struct addrinfo *const server_info, const Config *const config,
                   &(struct itimerval){{0, FILE_REQUEST_TIMEOUT_MS * 1000},
                                       {0, FILE_REQUEST_TIMEOUT_MS * 1000}},
                   NULL);
-        if (receive_file_and_cancel_timeout(sockfd, config) == 0)
+        if (receive_file_and_cancel_timeout(sockfd, config, &private_key) == 0)
             break;
         else if (errno != EINTR)
             return -1;

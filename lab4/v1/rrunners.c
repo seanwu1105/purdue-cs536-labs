@@ -134,7 +134,7 @@ int run(const Config *const config, const uint16_t secret_key)
             // Child process
             close(request_sockfd);
             if (send_file(&packet_sockfd, filename, config, &client_addr,
-                          client_addr_len) < 0)
+                          client_addr_len, NULL) < 0)
                 exit(EXIT_FAILURE);
             exit(EXIT_SUCCESS);
         }

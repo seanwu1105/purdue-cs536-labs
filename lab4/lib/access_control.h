@@ -14,6 +14,7 @@ typedef struct
 
 ssize_t load_public_keys(PublicKey public_keys[]);
 int check_access(const struct sockaddr *const addr, const uint32_t certificate,
-                 const PublicKey public_keys[], const size_t public_keys_size);
+                 const PublicKey public_keys[], const size_t public_keys_size,
+                 uint32_t *pubkey);
 
 #endif // _ACCESS_CONTROL_H_

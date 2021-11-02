@@ -109,8 +109,9 @@ int run(const Config *const config, const PublicKey public_keys[],
                          &client_addr_len) < 0)
             continue;
 
+        uint32_t public_key;
         if (!check_access(&client_addr, received_pubkey, public_keys,
-                          num_public_keys))
+                          num_public_keys, &public_key))
         {
             fprintf(stderr, "Access denied: bad certificate\n");
             continue;
@@ -132,7 +133,7 @@ int run(const Config *const config, const PublicKey public_keys[],
             // Child process
             close(request_sockfd);
             if (send_file(&packet_sockfd, filename, config, &client_addr,
-                          client_addr_len) < 0)
+                          client_addr_len, &public_key) < 0)
                 exit(EXIT_FAILURE);
             exit(EXIT_SUCCESS);
         }

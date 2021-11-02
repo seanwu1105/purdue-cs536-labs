@@ -58,12 +58,19 @@ ssize_t load_public_keys(PublicKey public_keys[])
 }
 
 int check_access(const struct sockaddr *const addr, const uint32_t certificate,
-                 const PublicKey public_keys[], const size_t public_keys_size)
+                 const PublicKey public_keys[], const size_t public_keys_size,
+                 uint32_t *pubkey)
 {
     uint32_t ip = ntohl(((struct sockaddr_in *)addr)->sin_addr.s_addr);
     for (size_t i = 0; i < public_keys_size; i++)
     {
-        if (bbencode(certificate, public_keys[i].pubkey) == ip) return 1;
+        if (bbencode(certificate, public_keys[i].pubkey) == ip)
+        {
+            if (pubkey != NULL) *pubkey = public_keys[i].pubkey;
+            return 1;
+        }
     }
+
+    pubkey = NULL;
     return 0;
 }

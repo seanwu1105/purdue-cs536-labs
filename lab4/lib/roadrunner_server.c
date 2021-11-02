@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "bbcodec.h"
 #include "packet_codec.h"
 #include "roadrunner_server.h"
 
@@ -30,13 +31,14 @@ int receive_ack_and_cancel_timeout(const int sockfd, const uint8_t expected)
     return 0;
 }
 
-int send_window(int *const sockfd, const uint8_t *const data,
-                const size_t data_size,
+int send_window(int *const sockfd, uint8_t *const data, const size_t data_size,
                 const struct sockaddr *const client_addr,
                 const socklen_t client_addr_len, const int is_eof,
-                const Config *const config,
+                const Config *const config, const uint32_t *const pubkey,
                 uint8_t *const initial_sequence_number)
 {
+    if (pubkey != NULL) bbencode_data(data, data_size, *pubkey);
+
     while (1)
     {
         uint8_t sequence_number = *initial_sequence_number;
@@ -101,7 +103,7 @@ int send_window(int *const sockfd, const uint8_t *const data,
 int send_file(int *const sockfd, const char *const filename,
               const Config *const config,
               const struct sockaddr *const client_addr,
-              const socklen_t client_addr_len)
+              const socklen_t client_addr_len, const uint32_t *const pubkey)
 {
     FILE *const file = fopen(filename, "r");
     if (file == NULL)
@@ -141,7 +143,7 @@ int send_file(int *const sockfd, const char *const filename,
                 {
                     if (send_window(sockfd, prev_buf, prev_bytes_read,
                                     client_addr, client_addr_len, 1, config,
-                                    &initial_sequence_number) < 0)
+                                    pubkey, &initial_sequence_number) < 0)
                     {
                         fclose(file);
                         return -1;
@@ -151,7 +153,7 @@ int send_file(int *const sockfd, const char *const filename,
                 {
                     if (send_window(sockfd, prev_buf, prev_bytes_read,
                                     client_addr, client_addr_len, 1, config,
-                                    &initial_sequence_number) < 0)
+                                    pubkey, &initial_sequence_number) < 0)
                     {
                         fclose(file);
                         return -1;
@@ -163,7 +165,7 @@ int send_file(int *const sockfd, const char *const filename,
             else
             {
                 if (send_window(sockfd, prev_buf, prev_bytes_read, client_addr,
-                                client_addr_len, 0, config,
+                                client_addr_len, 0, config, pubkey,
                                 &initial_sequence_number) < 0)
                 {
                     fclose(file);
@@ -171,7 +173,7 @@ int send_file(int *const sockfd, const char *const filename,
                 }
 
                 if (send_window(sockfd, curr_buf, curr_bytes_read, client_addr,
-                                client_addr_len, 1, config,
+                                client_addr_len, 1, config, pubkey,
                                 &initial_sequence_number) < 0)
                 {
                     fclose(file);
@@ -182,7 +184,8 @@ int send_file(int *const sockfd, const char *const filename,
         }
 
         send_window(sockfd, prev_buf, prev_bytes_read, client_addr,
-                    client_addr_len, 0, config, &initial_sequence_number);
+                    client_addr_len, 0, config, pubkey,
+                    &initial_sequence_number);
 
         prev_bytes_read = curr_bytes_read;
         memcpy(prev_buf, curr_buf, curr_bytes_read * sizeof(uint8_t));
