@@ -109,3 +109,15 @@ jobs:
 
       - name: Make
         run: make
+
+  lab5_v1:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab5/v1/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Make
+        run: make
