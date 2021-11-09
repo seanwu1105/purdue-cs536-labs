@@ -20,7 +20,7 @@ void tear_down() { close(sockfd); }
 static void sigint_handler(int _)
 {
     tear_down();
-    exit(EXIT_SUCCESS);
+    _exit(EXIT_SUCCESS);
 }
 
 typedef struct

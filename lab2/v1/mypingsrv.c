@@ -12,19 +12,12 @@
 
 int sockfd = -1;
 
-static void tear_down()
-{
-    if (close(sockfd) == -1)
-    {
-        perror("close");
-        exit(EXIT_FAILURE);
-    }
-}
+static void tear_down() { close(sockfd); }
 
 static void sigint_handler(int _)
 {
     tear_down();
-    exit(EXIT_SUCCESS);
+    _exit(EXIT_SUCCESS);
 }
 
 int feedback(const struct sockaddr target_addr, const int32_t id,

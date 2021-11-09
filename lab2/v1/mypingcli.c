@@ -14,19 +14,12 @@
 
 int sockfd = -1;
 
-void tear_down()
-{
-    if (close(sockfd) == -1)
-    {
-        perror("close");
-        exit(EXIT_FAILURE);
-    }
-}
+void tear_down() { close(sockfd); }
 
 static void sigint_handler(int _)
 {
     tear_down();
-    exit(EXIT_SUCCESS);
+    _exit(EXIT_SUCCESS);
 }
 
 static void sigalrm_handler(int _) { return; }

@@ -16,22 +16,14 @@ int fd = -1;
 
 void tear_down()
 {
-    if (close(fd) == -1)
-    {
-        perror("close");
-        exit(EXIT_FAILURE);
-    }
-    if (unlink(SERVER_FIFO_NAME) == -1)
-    {
-        perror("unlink");
-        exit(EXIT_FAILURE);
-    }
+    close(fd);
+    unlink(SERVER_FIFO_NAME);
 }
 
 static void sigint_handler(int _)
 {
     tear_down();
-    exit(EXIT_SUCCESS);
+    _exit(EXIT_SUCCESS);
 }
 
 int start_server()

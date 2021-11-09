@@ -25,7 +25,7 @@ void tear_down()
 static void sigint_handler(int _)
 {
     tear_down();
-    exit(EXIT_SUCCESS);
+    _exit(EXIT_SUCCESS);
 }
 typedef struct
 {

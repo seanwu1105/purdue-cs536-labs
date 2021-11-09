@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 static void sigint_handler(int _)
 {
     tear_down();
-    exit(EXIT_SUCCESS);
+    _exit(EXIT_SUCCESS);
 }
 
 static void tear_down()

@@ -17,7 +17,7 @@ void tear_down() { unlink(client_fifo_name); }
 static void sigint_handler(int _)
 {
     tear_down();
-    exit(EXIT_SUCCESS);
+    _exit(EXIT_SUCCESS);
 }
 
 void get_client_fifo_name(char *name, const size_t size)
