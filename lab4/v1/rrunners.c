@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
         -1)
         return -1;
 
-    if ((bind_socket_with_first_usable_addr(server_info, request_sockfd)) == -1)
+    if (bind_socket_with_first_usable_addr(server_info, request_sockfd) == -1)
     {
         close(request_sockfd);
         return -1;

@@ -67,11 +67,11 @@ int parse_args(int argc, char *argv[], struct addrinfo **server_info,
     }
     *private_key = (uint32_t)prikey;
 
-    long long blocksize = strtoull(argv[5], NULL, 0);
+    unsigned long long blocksize = strtoull(argv[5], NULL, 0);
     if ((status = check_blocksize(blocksize)) != 0) return status;
     config->blocksize = (uint16_t)blocksize;
 
-    long long windowsize = strtoull(argv[6], NULL, 0);
+    unsigned long long windowsize = strtoull(argv[6], NULL, 0);
     if ((status = check_windowsize(windowsize)) != 0) return status;
     config->windowsize = (uint8_t)windowsize;
 
