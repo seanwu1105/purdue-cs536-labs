@@ -206,3 +206,22 @@ previous labs (e.g., Makefile, README).
 > collaborative problem solving and some parallel speed-up if efficiently
 > executed. Regarding late days, for a group to use _k_ (= 1, 2, 3) late days,
 > every member of the group must have _k_ late days left.
+
+## Getting Started
+
+### Environment
+
+Project has been tested on Ubuntu 20.04.3 LTS. Make sure `libasound2-dev` is
+installed.
+
+```sh
+apt install libasound2-dev
+```
+
+## Prepare Your Audio Samples
+
+Convert the audio samples with FFmpeg.
+
+```sh
+ffmpeg -i your-music.wav -codec:a pcm_mulaw -ac 1 -ar 8000 -ab 64k your-music.au
+```

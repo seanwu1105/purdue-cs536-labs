@@ -27,7 +27,8 @@
     "string": "c",
     "string_view": "c",
     "netdb.h": "c",
-    "roadrunner_client.h": "c"
+    "roadrunner_client.h": "c",
+    "asoundlib.h": "c"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
