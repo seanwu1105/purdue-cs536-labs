@@ -21,11 +21,11 @@ typedef struct
 } Config;
 
 static void sigint_handler(int _);
-static void tear_down();
+static void sigalrm_handler(int _);
 static int parse_args(int argc, char **argv, Config *config);
-static int run(Config *config);
-static int request_file(const Config *const config);
-static int stream_file_and_cancel_timeout(int sockfd,
+static int run(const int sockfd, Config *config);
+static int request_file(const int sockfd, const Config *const config);
+static int stream_file_and_cancel_timeout(const int sockfd,
                                           const Config *const config);
 
 #endif // _AUDIOCLI_H_

@@ -11,17 +11,19 @@
 #include "request_codec.h"
 #include "socket_utils.h"
 
-static int request_sockfd = -1;
-static int packet_sockfd = -1;
-
 int main(int argc, char *argv[])
 {
     const struct sigaction sigint_action = {.sa_handler = sigint_handler};
-    sigaction(SIGINT, &sigint_action, NULL);
+    if (sigaction(SIGINT, &sigint_action, NULL) < 0)
+    {
+        perror("sigaction");
+        return -1;
+    }
 
     Config config;
     if (parse_args(argc, argv, &config) != 0) return -1;
 
+    int request_sockfd = -1;
     if ((request_sockfd =
              create_socket_with_first_usable_addr(config.server_info)) == -1)
         return -1;
@@ -29,26 +31,14 @@ int main(int argc, char *argv[])
     if (bind_socket_with_first_usable_addr(config.server_info,
                                            request_sockfd) != 0)
     {
-        tear_down();
+        close(request_sockfd);
         return -1;
     }
 
-    return run(&config);
+    return run(request_sockfd, &config);
 }
 
-static void sigint_handler(int _)
-{
-    tear_down();
-    _exit(EXIT_SUCCESS);
-}
-
-static void tear_down()
-{
-    close(request_sockfd);
-    request_sockfd = -1;
-    close(packet_sockfd);
-    packet_sockfd = -1;
-}
+static void sigint_handler(int _) { _exit(EXIT_SUCCESS); }
 
 static int parse_args(int argc, char **argv, Config *config)
 {
@@ -71,7 +61,7 @@ static int parse_args(int argc, char **argv, Config *config)
     return 0;
 }
 
-static int run(Config *config)
+static int run(int const request_sockfd, Config *config)
 {
     uint16_t blocksize;
     char filename[MAX_FILENAME_LEN + 1];
@@ -79,8 +69,8 @@ static int run(Config *config)
     socklen_t client_addr_len = sizeof(client_addr);
     while (1)
     {
-        if (read_request(filename, &blocksize, &client_addr, &client_addr_len) <
-            0)
+        if (read_request(request_sockfd, filename, &blocksize, &client_addr,
+                         &client_addr_len) < 0)
             continue;
 
         if (check_filename(filename) != 0) continue;
@@ -97,7 +87,8 @@ static int run(Config *config)
         {
             // Child process
             close(request_sockfd);
-            printf("child exit!\n");
+            send_file(filename, blocksize, config, &client_addr,
+                      client_addr_len);
             exit(EXIT_SUCCESS);
         }
     }
@@ -105,7 +96,8 @@ static int run(Config *config)
     return 0;
 }
 
-static int read_request(char *const filename, uint16_t *const blocksize,
+static int read_request(const int request_sockfd, char *const filename,
+                        uint16_t *const blocksize,
                         struct sockaddr *const client_addr,
                         socklen_t *const client_addr_len)
 {
@@ -119,5 +111,74 @@ static int read_request(char *const filename, uint16_t *const blocksize,
     }
 
     decode_request(request, filename, blocksize);
+    return 0;
+}
+
+static int send_file(const char *const filename, const uint16_t blocksize,
+                     Config *const config, struct sockaddr *const client_addr,
+                     const socklen_t client_addr_len)
+{
+    FILE *const file = fopen(filename, "r");
+    if (file == NULL)
+    {
+        perror("fopen");
+        return -1;
+    }
+
+    const int packet_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (packet_sockfd == -1)
+    {
+        perror("socket");
+        fclose(file);
+        return -1;
+    }
+
+    uint8_t buffer[blocksize];
+    size_t bytes_read;
+    while ((bytes_read = fread(buffer, 1, blocksize, file)) > 0)
+    {
+        if (sendto(packet_sockfd, buffer, bytes_read, 0, client_addr,
+                   client_addr_len) < 0)
+        {
+            perror("sendto");
+            close(packet_sockfd);
+            fclose(file);
+            return -1;
+        }
+    }
+
+    if (ferror(file) != 0)
+    {
+        perror("fread");
+        close(packet_sockfd);
+        fclose(file);
+        return -1;
+    }
+
+    fclose(file);
+
+    if (send_eof(packet_sockfd, client_addr, client_addr_len) < 0)
+    {
+        close(packet_sockfd);
+        return -1;
+    }
+
+    close(packet_sockfd);
+    fprintf(stdout, "Transmission completed: %s\n", filename);
+    return 0;
+}
+
+static int send_eof(const int packet_sockfd, struct sockaddr *const client_addr,
+                    const socklen_t client_addr_len)
+{
+    for (size_t i = 0; i < EOF_TRIES; i++)
+    {
+        if (sendto(packet_sockfd, EOF_PACKET, EOF_PACKET_SIZE, 0, client_addr,
+                   client_addr_len) < 0)
+        {
+            perror("sendto");
+            return -1;
+        }
+    }
     return 0;
 }

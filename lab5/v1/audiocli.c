@@ -13,38 +13,40 @@
 #include "request_codec.h"
 #include "socket_utils.h"
 
-static int sockfd = -1;
-
 int main(int argc, char *argv[])
 {
     const struct sigaction sigint_action = {.sa_handler = sigint_handler};
-    sigaction(SIGINT, &sigint_action, NULL);
+    if (sigaction(SIGINT, &sigint_action, NULL) < 0)
+    {
+        perror("sigaction");
+        return -1;
+    }
+
+    const struct sigaction sigalrm_action = {.sa_handler = sigalrm_handler};
+    if (sigaction(SIGALRM, &sigalrm_action, NULL) < 0)
+    {
+        perror("sigaction");
+        return -1;
+    }
 
     Config config;
     if (parse_args(argc, argv, &config) != 0) return 1;
 
+    int sockfd = -1;
     if ((sockfd = create_socket_with_first_usable_addr(config.server_info)) ==
         -1)
         return -1;
 
-    int status = run(&config);
+    int status = run(sockfd, &config);
 
-    tear_down();
+    close(sockfd);
 
     return status;
 }
 
-static void sigint_handler(int _)
-{
-    tear_down();
-    _exit(EXIT_SUCCESS);
-}
+static void sigint_handler(int _) { _exit(EXIT_SUCCESS); }
 
-static void tear_down()
-{
-    close(sockfd);
-    sockfd = -1;
-}
+static void sigalrm_handler(int _) { return; }
 
 static int parse_args(int argc, char **argv, Config *config)
 {
@@ -77,16 +79,20 @@ static int parse_args(int argc, char **argv, Config *config)
     return 0;
 }
 
-static int run(Config *config)
+static int run(const int sockfd, Config *config)
 {
     while (1)
     {
-        request_file(config);
-        // Start request timeout timer
-        setitimer(ITIMER_REAL,
-                  &(struct itimerval){{0, FILE_REQUEST_TIMEOUT_MS * 1000},
-                                      {0, FILE_REQUEST_TIMEOUT_MS * 1000}},
-                  NULL);
+        request_file(sockfd, config);
+        // Start request timeout timer.
+        if (setitimer(ITIMER_REAL,
+                      &(struct itimerval){{0, FILE_REQUEST_TIMEOUT_MS * 1000},
+                                          {0, FILE_REQUEST_TIMEOUT_MS * 1000}},
+                      NULL) < 0)
+        {
+            perror("setitimer");
+            return -1;
+        }
         if (stream_file_and_cancel_timeout(sockfd, config) == 0)
             break;
         else if (errno != EINTR)
@@ -95,7 +101,7 @@ static int run(Config *config)
     return 0;
 }
 
-static int request_file(const Config *const config)
+static int request_file(const int sockfd, const Config *const config)
 {
     uint8_t request[REQUEST_SIZE];
     encode_request(config->audio_filename, config->blocksize, request);
@@ -109,9 +115,39 @@ static int request_file(const Config *const config)
     return 0;
 }
 
-static int stream_file_and_cancel_timeout(int sockfd,
+static int stream_file_and_cancel_timeout(const int sockfd,
                                           const Config *const config)
 {
+    uint8_t buffer[config->blocksize];
+    ssize_t bytes_read;
+    struct sockaddr server_addr;
+    socklen_t server_addr_len = sizeof(server_addr);
+    while ((bytes_read = recvfrom(sockfd, buffer, sizeof(buffer), 0,
+                                  &server_addr, &server_addr_len)) > 0)
+    {
+        // Cancel request timeout timer.
+        if (setitimer(ITIMER_REAL, 0, NULL) < 0)
+        {
+            perror("setitimer");
+            return -1;
+        }
+
+        if (bytes_read == config->blocksize)
+            printf(".");
+        else
+            printf("%ld\n", bytes_read);
+    }
+
+    printf("end\n");
+
+    if (bytes_read < 0)
+    {
+        if (errno != EINTR)
+            perror("recvfrom");
+        else
+            fprintf(stderr, "Request timed out.\n");
+        return -1;
+    }
 
     return 0;
 }
