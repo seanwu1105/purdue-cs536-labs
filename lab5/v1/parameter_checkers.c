@@ -20,7 +20,7 @@ int check_filename(const char *const filename)
     if (strcmp(s, ".au") != 0)
     {
         fprintf(stderr, "Filename contains invalid characters or not ended with"
-                        " '.au.'\n");
+                        " '.au'.\n");
         return -2;
     }
     return 0;
