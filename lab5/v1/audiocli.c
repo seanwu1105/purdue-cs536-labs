@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -33,7 +34,7 @@ int main(int argc, char *argv[])
     }
 
     Config config;
-    if (parse_args(argc, argv, &config) != 0) return 1;
+    if (get_config(argc, argv, &config) != 0) return 1;
 
     uint8_t buffer[config.buffer_size + 1]; // +1 for circular FIFO capacity
     queue = (Queue){.head = 0,
@@ -67,7 +68,7 @@ static void sigalrm_handler(int _)
     return;
 }
 
-static int parse_args(int argc, char **argv, Config *config)
+static int get_config(int argc, char **argv, Config *config)
 {
     if (argc < REQUIRED_ARGC)
     {
@@ -98,6 +99,38 @@ static int parse_args(int argc, char **argv, Config *config)
 
     config->method = (unsigned short)strtoul(argv[8], NULL, 0);
     config->log_filename = argv[9];
+
+    if (read_parameters_file(config) < 0) return -1;
+
+    return 0;
+}
+
+static int read_parameters_file(Config *const config)
+{
+    config->epsilon = 0;
+    config->beta = 0;
+
+    FILE *const file = fopen(CONGESTION_CONTROL_PARAMETERS_FILENAME, "r");
+    if (file == NULL)
+    {
+        perror("fopen");
+        return -1;
+    }
+    char content[FREAD_BUFFER_SIZE + 1];
+    const size_t bytes_read =
+        fread(content, sizeof(char), FREAD_BUFFER_SIZE, file);
+    fclose(file);
+
+    content[bytes_read] = '\0';
+    if (bytes_read == 0) return 0;
+
+    const char *val = strtok(content, "  \t\n\0");
+    if (val == NULL) return 0;
+    config->epsilon = strtold(val, NULL);
+
+    val = strtok(NULL, "  \t\n\0");
+    if (val == NULL) return 0;
+    config->beta = strtold(val, NULL);
 
     return 0;
 }
@@ -193,6 +226,8 @@ static int stream_file_and_cancel_request_timeout(const int sockfd,
         }
         printf("%lu\n", get_queue_load(&queue));
         fflush(stdout);
+
+        send_feedback(sockfd, &server_addr, server_addr_len, config);
     }
 
     // Cancel timer.
@@ -203,3 +238,19 @@ static int stream_file_and_cancel_request_timeout(const int sockfd,
     }
     return 0;
 }
+
+static int send_feedback(const int sockfd,
+                         const struct sockaddr *const server_addr,
+                         const socklen_t server_addr_len,
+                         const Config *const config)
+{
+    if (config->method == CONGESTION_CONTROL_METHOD_C)
+        update_influx_rate_methed_c();
+    else if (config->method == CONGESTION_CONTROL_METHOD_D)
+        update_influx_rate_methed_d();
+    return 0;
+}
+
+static int update_influx_rate_methed_c() { return 0; }
+
+static int update_influx_rate_methed_d() { return 0; }

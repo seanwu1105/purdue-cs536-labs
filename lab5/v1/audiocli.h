@@ -10,6 +10,8 @@
 #define AUDIO_REQUEST_INTERVAL_MS 313
 #define CONGESTION_CONTROL_METHOD_C 0
 #define CONGESTION_CONTROL_METHOD_D 1
+#define CONGESTION_CONTROL_PARAMETERS_FILENAME "audiocliparam.dat"
+#define FREAD_BUFFER_SIZE 4096
 
 typedef struct
 {
@@ -21,14 +23,24 @@ typedef struct
     unsigned long long packets_per_second;
     unsigned short method;
     char *log_filename;
+    long double epsilon;
+    long double beta;
 } Config;
 
 static void sigint_handler(int _);
 static void sigalrm_handler(int _);
-static int parse_args(int argc, char **argv, Config *config);
+static int get_config(int argc, char **argv, Config *config);
+static int read_parameters_file(Config *const config);
 static int run(const int sockfd, Config *config);
 static int request_file(const int sockfd, const Config *const config);
 static int stream_file_and_cancel_request_timeout(const int sockfd,
                                                   const Config *const config);
+static int send_feedback(const int sockfd,
+                         const struct sockaddr *const server_addr,
+                         const socklen_t server_addr_len,
+                         const Config *const config);
+static int update_influx_rate_methed_c();
+
+static int update_influx_rate_methed_d();
 
 #endif // _AUDIOCLI_H_

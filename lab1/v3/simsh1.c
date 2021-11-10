@@ -22,7 +22,7 @@ void tear_down()
 
 int start_server()
 {
-    char buf[PIPE_BUF];
+    char buf[PIPE_BUF + 1];
     int status;
 
     while (1)
