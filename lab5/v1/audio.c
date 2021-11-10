@@ -73,23 +73,29 @@ int mulawopen(snd_pcm_t **pcm_handle)
     return 0;
 }
 
-int mulawwrite(snd_pcm_t *pcm_handle, const uint8_t *const data)
-{
-    int status = 0;
-    if ((status = snd_pcm_writei(pcm_handle, data, AUDIO_FRAME_SIZE)) < 0)
-    {
-        if (status != -EPIPE) fprintf(stderr, "Cannot write to PCM device\n");
-        return status;
-    }
-    return 0;
-}
-
-int mulawrecover(snd_pcm_t *pcm_handle)
+static int mulawrecover(snd_pcm_t *pcm_handle)
 {
     int status = 0;
     if ((status = snd_pcm_prepare(pcm_handle)) < 0)
     {
         fprintf(stderr, "Cannot recover PCM\n");
+        return status;
+    }
+    return 0;
+}
+
+int mulawwrite(snd_pcm_t *pcm_handle, const uint8_t *const data,
+               const size_t size)
+{
+    int status = 0;
+    if ((status = snd_pcm_writei(pcm_handle, data, (snd_pcm_uframes_t)size)) <
+        0)
+    {
+        if (status == -EPIPE)
+            if ((status = mulawrecover(pcm_handle)) < 0)
+                return status;
+            else
+                fprintf(stderr, "Cannot write to PCM device\n");
         return status;
     }
     return 0;

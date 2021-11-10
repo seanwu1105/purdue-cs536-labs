@@ -18,6 +18,7 @@
 #include "socket_utils.h"
 
 Queue queue;
+snd_pcm_t *pcm_handle;
 
 int main(int argc, char *argv[])
 {
@@ -49,7 +50,19 @@ int main(int argc, char *argv[])
         -1)
         return -1;
 
+    if (mulawopen(&pcm_handle) < 0)
+    {
+        close(sockfd);
+        return -1;
+    }
+
     int status = run(sockfd, &config);
+
+    if (mulawclose(pcm_handle) < 0)
+    {
+        close(sockfd);
+        return -1;
+    }
 
     close(sockfd);
 
@@ -67,6 +80,9 @@ static void sigalrm_handler(int _)
         fprintf(stderr, "Queue is empty\n"); // TODO: remove this unsafe printf
         fflush(stderr);
     }
+
+    if (bytes_read > 0)
+        if (mulawwrite(pcm_handle, buffer, bytes_read) < 0) _exit(EXIT_FAILURE);
 }
 
 static int get_config(int argc, char **argv, Config *config)
@@ -232,7 +248,7 @@ static int stream_file_and_cancel_request_timeout(const int sockfd,
         {
             fprintf(stderr, "Queue is full\n");
         }
-        printf("enq %lu\t", get_queue_load(&queue));
+        printf("enq: %lu\t", get_queue_load(&queue));
         fflush(stdout);
 
         if (send_feedback(sockfd, &server_addr, server_addr_len, config,
