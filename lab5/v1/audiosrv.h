@@ -26,6 +26,7 @@ static int read_request(const int request_sockfd, char *const filename,
 static int send_file(const char *const filename, const uint16_t blocksize,
                      Config *const config, struct sockaddr *const client_addr,
                      const socklen_t client_addr_len);
+static int receive_feedback(const int packet_sockfd);
 static int send_eof(const int packet_sockfd, struct sockaddr *const client_addr,
                     const socklen_t client_addr_len);
 

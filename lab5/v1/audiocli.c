@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "audio.h"
 #include "audiocli.h"
 #include "parameter_checkers.h"
 #include "pspacing.h"
@@ -66,7 +67,6 @@ static void sigalrm_handler(int _)
         fprintf(stderr, "Queue is empty.\n"); // TODO: remove this unsafe printf
         fflush(stderr);
     }
-    return;
 }
 
 static int get_config(int argc, char **argv, Config *config)

@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <netdb.h>
 #include <signal.h>
 #include <stdint.h>
@@ -153,6 +154,7 @@ static int send_file(const char *const filename, const uint16_t blocksize,
 
         printf(".");
         fflush(stdout);
+        if (receive_feedback(packet_sockfd) < 0) return -1;
 
         uint16_t packet_interval_ms =
             to_pspacing_ms(config->packets_per_second);
@@ -160,7 +162,6 @@ static int send_file(const char *const filename, const uint16_t blocksize,
             .tv_sec = packet_interval_ms / 1000,
             .tv_nsec = (packet_interval_ms % 1000) * 1000000,
         };
-
         nanosleep(&sleep_time, NULL);
     }
     printf("\n");
@@ -183,6 +184,23 @@ static int send_file(const char *const filename, const uint16_t blocksize,
 
     close(packet_sockfd);
     fprintf(stdout, "Transmission completed: %s\n", filename);
+    return 0;
+}
+
+static int receive_feedback(const int packet_sockfd)
+{
+    uint16_t feedback;
+    if (recvfrom(packet_sockfd, &feedback, sizeof(feedback), MSG_DONTWAIT, NULL,
+                 NULL) < 0)
+    {
+        if (errno != EAGAIN)
+        {
+            perror("recvfrom");
+            return -1;
+        }
+    }
+    else
+        printf("Received feedback: %hu\n", feedback);
     return 0;
 }
 
