@@ -66,13 +66,17 @@ static int parse_args(int argc, char **argv, Config *config)
     config->audio_filename = argv[3];
     if (check_filename(config->audio_filename) != 0) return -1;
 
-    unsigned long long blocksize = strtoull(argv[4], NULL, 0);
+    const unsigned long long blocksize = strtoull(argv[4], NULL, 0);
     if (check_blocksize(blocksize) != 0) return -1;
     config->blocksize = (uint16_t)blocksize;
 
     config->buffer_size = strtoull(argv[5], NULL, 0);
     config->target_buffer_occupancy = strtoull(argv[6], NULL, 0);
-    config->packets_per_second = strtoull(argv[7], NULL, 0);
+
+    const unsigned long long packets_per_second = strtoull(argv[7], NULL, 0);
+    if (check_packets_per_second(packets_per_second) != 0) return -1;
+    config->packets_per_second = packets_per_second;
+
     config->method = (unsigned short)strtoul(argv[8], NULL, 0);
     config->log_filename = argv[9];
 
@@ -132,10 +136,8 @@ static int stream_file_and_cancel_timeout(const int sockfd,
             return -1;
         }
 
-        if (bytes_read == config->blocksize)
-            printf(".");
-        else
-            printf("%ld\n", bytes_read);
+        printf(".");
+        fflush(stdout);
     }
 
     printf("end\n");

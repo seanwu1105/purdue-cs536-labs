@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "audiosrv.h"
@@ -55,7 +56,10 @@ static int parse_args(int argc, char **argv, Config *config)
         0)
         return -1;
 
-    config->packets_per_second = strtoull(argv[3], NULL, 0);
+    const unsigned long long packets_per_second = strtoull(argv[3], NULL, 0);
+    if (check_packets_per_second(packets_per_second) != 0) return -1;
+    config->packets_per_second = packets_per_second;
+
     config->log_filename = argv[4];
 
     return 0;
@@ -145,7 +149,19 @@ static int send_file(const char *const filename, const uint16_t blocksize,
             fclose(file);
             return -1;
         }
+
+        printf(".");
+        fflush(stdout);
+
+        struct timespec sleep_time = {
+            .tv_sec = config->packets_per_second == 1,
+            .tv_nsec = config->packets_per_second == 1
+                           ? 0
+                           : 1000000000 / config->packets_per_second};
+
+        nanosleep(&sleep_time, NULL);
     }
+    printf("\n");
 
     if (ferror(file) != 0)
     {
