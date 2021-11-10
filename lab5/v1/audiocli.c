@@ -13,6 +13,8 @@
 #include "request_codec.h"
 #include "socket_utils.h"
 
+int test = 0;
+
 int main(int argc, char *argv[])
 {
     const struct sigaction sigint_action = {.sa_handler = sigint_handler};
@@ -46,7 +48,11 @@ int main(int argc, char *argv[])
 
 static void sigint_handler(int _) { _exit(EXIT_SUCCESS); }
 
-static void sigalrm_handler(int _) { return; }
+static void sigalrm_handler(int _)
+{
+    test--;
+    return;
+}
 
 static int parse_args(int argc, char **argv, Config *config)
 {
@@ -97,7 +103,7 @@ static int run(const int sockfd, Config *config)
             perror("setitimer");
             return -1;
         }
-        if (stream_file_and_cancel_timeout(sockfd, config) == 0)
+        if (stream_file_and_cancel_request_timeout(sockfd, config) == 0)
             break;
         else if (errno != EINTR)
             return -1;
@@ -119,37 +125,63 @@ static int request_file(const int sockfd, const Config *const config)
     return 0;
 }
 
-static int stream_file_and_cancel_timeout(const int sockfd,
-                                          const Config *const config)
+static int stream_file_and_cancel_request_timeout(const int sockfd,
+                                                  const Config *const config)
 {
+    unsigned short is_request_successful = 0;
     uint8_t buffer[config->blocksize];
-    ssize_t bytes_read;
     struct sockaddr server_addr;
     socklen_t server_addr_len = sizeof(server_addr);
-    while ((bytes_read = recvfrom(sockfd, buffer, sizeof(buffer), 0,
-                                  &server_addr, &server_addr_len)) > 0)
+    while (1)
     {
-        // Cancel request timeout timer.
-        if (setitimer(ITIMER_REAL, 0, NULL) < 0)
+        ssize_t bytes_read = recvfrom(sockfd, buffer, sizeof(buffer), 0,
+                                      &server_addr, &server_addr_len);
+        if (bytes_read == 0)
+            break;
+        else if (bytes_read < 0)
         {
-            perror("setitimer");
-            return -1;
+            if (errno != EINTR)
+            {
+                perror("recvfrom");
+                return -1;
+            }
+            else if (!is_request_successful)
+            {
+                fprintf(stderr, "Request timed out.\n");
+                return -1;
+            }
+            else
+            {
+                printf("%d\n", test);
+                continue;
+            }
         }
 
-        printf(".");
+        if (!is_request_successful)
+        {
+            is_request_successful = 1;
+            // Start audio playback timer.
+            if (setitimer(
+                    ITIMER_REAL,
+                    &(struct itimerval){{0, AUDIO_REQUEST_INTERVAL_MS * 1000},
+                                        {0, AUDIO_REQUEST_INTERVAL_MS * 1000}},
+                    NULL) < 0)
+            {
+                perror("setitimer");
+                return -1;
+            }
+        }
+
+        test++;
+        printf("%d\n", test);
         fflush(stdout);
     }
 
-    printf("end\n");
-
-    if (bytes_read < 0)
+    // Cancel timer.
+    if (setitimer(ITIMER_REAL, 0, NULL) < 0)
     {
-        if (errno != EINTR)
-            perror("recvfrom");
-        else
-            fprintf(stderr, "Request timed out.\n");
+        perror("setitimer");
         return -1;
     }
-
     return 0;
 }
