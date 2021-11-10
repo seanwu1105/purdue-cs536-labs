@@ -29,7 +29,8 @@
     "netdb.h": "c",
     "roadrunner_client.h": "c",
     "asoundlib.h": "c",
-    "audiocli.h": "c"
+    "audiocli.h": "c",
+    "audio.h": "c"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

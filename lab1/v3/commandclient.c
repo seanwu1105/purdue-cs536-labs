@@ -57,7 +57,7 @@ int start_client()
                 return -1;
             }
             else
-                fprintf(stderr, "Command length too long.\n");
+                fprintf(stderr, "Command length too long\n");
         }
 
         if (close(server_fifo_fd) == -1)

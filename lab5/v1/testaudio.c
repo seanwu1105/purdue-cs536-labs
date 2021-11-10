@@ -76,14 +76,27 @@ int main(int argc, char **argv)
     buf = (char *)malloc(bufsiz); // audio buffer
 
     // read from .au file argv[1] and send to ALSA audio device
+    size_t count = 0;
     while (read(fd1, buf, bufsiz) > 0)
     {
-        int rc = mulawwrite(buf);
-        if (rc != bufsiz) printf("rc = %d\n", rc);
+        int write_ret = mulawwrite(buf);
+        printf("%lu\n", count);
+        if (write_ret != bufsiz) printf("err: write_ret = %d\n", write_ret);
         fflush(stdout);
-        usleep(slptime); // pace writing to audio codec;
-                         // sleep time around 313 msec provides reasonable
-                         // pacing; in lab5 use nanosleep()
+        if (0)
+            usleep(slptime * 4);
+        else
+            usleep(slptime); // pace writing to audio codec;
+                             // sleep time around 313 msec provides reasonable
+                             // pacing; in lab5 use nanosleep()
+        count++;
+        if (write_ret == -EPIPE)
+        {
+            if (snd_pcm_prepare(mulawdev) < 0)
+            {
+                fprintf(stderr, "cannot recover from underrun\n");
+            }
+        }
     }
 
     mulawclose();

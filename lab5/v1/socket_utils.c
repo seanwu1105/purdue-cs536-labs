@@ -41,7 +41,7 @@ int create_socket_with_first_usable_addr(const struct addrinfo *const info)
 
     if (p == NULL)
     {
-        fprintf(stderr, "failed to create socket.\n");
+        fprintf(stderr, "failed to create socket\n");
         return -1;
     }
     return fd;
@@ -65,7 +65,7 @@ int bind_socket_with_first_usable_addr(const struct addrinfo *const info,
 
     if (p == NULL)
     {
-        fprintf(stderr, "failed to bind socket.\n");
+        fprintf(stderr, "failed to bind socket\n");
         return -1;
     }
     return 0;

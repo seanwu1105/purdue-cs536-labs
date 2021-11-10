@@ -64,7 +64,7 @@ static void sigalrm_handler(int _)
     ssize_t bytes_read = read_queue(&queue, buffer, 4096);
     if (bytes_read < 0)
     {
-        fprintf(stderr, "Queue is empty.\n"); // TODO: remove this unsafe printf
+        fprintf(stderr, "Queue is empty\n"); // TODO: remove this unsafe printf
         fflush(stderr);
     }
 }
@@ -91,8 +91,9 @@ static int get_config(int argc, char **argv, Config *config)
     if (check_blocksize(blocksize) != 0) return -1;
     config->blocksize = (uint16_t)blocksize;
 
-    config->buffer_size = strtoull(argv[5], NULL, 0);
-    config->target_buffer_occupancy = strtoull(argv[6], NULL, 0);
+    config->buffer_size = strtoull(argv[5], NULL, 0) * BUFFER_UNIT_SIZE;
+    config->target_buffer_occupancy =
+        strtoull(argv[6], NULL, 0) * BUFFER_UNIT_SIZE;
 
     const long double packets_per_second = strtold(argv[7], NULL);
     if (check_packets_per_second(packets_per_second) != 0) return -1;
@@ -196,13 +197,13 @@ static int stream_file_and_cancel_request_timeout(const int sockfd,
             }
             else if (!is_request_successful)
             {
-                fprintf(stderr, "Request timed out.\n");
+                fprintf(stderr, "Request timed out\n");
                 fflush(stderr);
                 return -1;
             }
             else
             {
-                printf("%lu\n", get_queue_load(&queue));
+                printf("deq: %lu\n", get_queue_load(&queue));
                 fflush(stdout);
                 continue;
             }
@@ -223,11 +224,15 @@ static int stream_file_and_cancel_request_timeout(const int sockfd,
             }
         }
 
+        // We do not need to take care race conditions here as only one writer
+        // can touch the write pointer (head) and only one reader can touch the
+        // read pointer (tail). There is a possibility that the buffer load is
+        // off by one (not up-to-date), but this is an acceptable trade-off.
         if (write_queue(&queue, buffer, bytes_read) < 0)
         {
-            fprintf(stderr, "Queue is full.\n");
+            fprintf(stderr, "Queue is full\n");
         }
-        printf("%lu\n", get_queue_load(&queue));
+        printf("enq %lu\t", get_queue_load(&queue));
         fflush(stdout);
 
         if (send_feedback(sockfd, &server_addr, server_addr_len, config,
@@ -282,7 +287,6 @@ update_packet_rate_methed_c(const long double packets_per_second,
         (long long)config->target_buffer_occupancy - get_queue_load(&queue);
     const long double new_bytes_per_second =
         bytes_per_second + config->epsilon * occupancy_diff;
-    printf("new bps: %Lf\n", new_bytes_per_second);
     if (new_bytes_per_second < 0) return 0;
     return new_bytes_per_second / config->blocksize;
 }

@@ -5,12 +5,15 @@
 #include <stdint.h>
 #include <sys/socket.h>
 
+#include "audio.h"
+
 #define REQUIRED_ARGC 10
 #define FILE_REQUEST_TIMEOUT_MS 500
 #define CONGESTION_CONTROL_METHOD_C 0
 #define CONGESTION_CONTROL_METHOD_D 1
 #define CONGESTION_CONTROL_PARAMETERS_FILENAME "audiocliparam.dat"
 #define FREAD_BUFFER_SIZE 4096
+#define BUFFER_UNIT_SIZE AUDIO_FRAME_SIZE
 
 typedef struct
 {

@@ -139,6 +139,7 @@ static int send_file(const char *const filename, const uint16_t blocksize,
         return -1;
     }
 
+    uint16_t packet_interval_ms = to_pspacing_ms(config->packets_per_second);
     uint8_t buffer[blocksize];
     size_t bytes_read;
     while ((bytes_read = fread(buffer, 1, blocksize, file)) > 0)
@@ -152,17 +153,25 @@ static int send_file(const char *const filename, const uint16_t blocksize,
             return -1;
         }
 
-        printf(".");
-        fflush(stdout);
-        if (receive_feedback(packet_sockfd) < 0) return -1;
-
-        uint16_t packet_interval_ms =
-            to_pspacing_ms(config->packets_per_second);
         struct timespec sleep_time = {
             .tv_sec = packet_interval_ms / 1000,
             .tv_nsec = (packet_interval_ms % 1000) * 1000000,
         };
-        nanosleep(&sleep_time, NULL);
+        if (nanosleep(&sleep_time, NULL) < 0)
+        {
+            perror("nanosleep");
+            close(packet_sockfd);
+            fclose(file);
+            return -1;
+        }
+
+        printf("sent: %lu\t", bytes_read);
+        if (receive_feedback(packet_sockfd, &packet_interval_ms) < 0)
+        {
+            close(packet_sockfd);
+            fclose(file);
+            return -1;
+        }
     }
     printf("\n");
 
@@ -187,7 +196,8 @@ static int send_file(const char *const filename, const uint16_t blocksize,
     return 0;
 }
 
-static int receive_feedback(const int packet_sockfd)
+static int receive_feedback(const int packet_sockfd,
+                            uint16_t *const packet_interval_ms)
 {
     uint16_t feedback;
     if (recvfrom(packet_sockfd, &feedback, sizeof(feedback), MSG_DONTWAIT, NULL,
@@ -200,7 +210,10 @@ static int receive_feedback(const int packet_sockfd)
         }
     }
     else
-        printf("Received feedback: %hu\n", feedback);
+    {
+        printf("recv: %hu\n", feedback);
+        *packet_interval_ms = feedback;
+    }
     return 0;
 }
 

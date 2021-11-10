@@ -27,7 +27,7 @@ int main()
                 return -1;
             }
             else
-                fprintf(stderr, "Command length too long.\n");
+                fprintf(stderr, "Command length too long\n");
         }
 
         if (close(fd) == -1)
