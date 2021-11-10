@@ -10,10 +10,11 @@
 
 #include "audiocli.h"
 #include "parameter_checkers.h"
+#include "queue.h"
 #include "request_codec.h"
 #include "socket_utils.h"
 
-int test = 0;
+Queue queue;
 
 int main(int argc, char *argv[])
 {
@@ -34,6 +35,12 @@ int main(int argc, char *argv[])
     Config config;
     if (parse_args(argc, argv, &config) != 0) return 1;
 
+    uint8_t buffer[config.buffer_size + 1]; // +1 for circular FIFO capacity
+    queue = (Queue){.head = 0,
+                    .tail = 0,
+                    .length = sizeof(buffer) / sizeof(uint8_t),
+                    .data = buffer};
+
     int sockfd = -1;
     if ((sockfd = create_socket_with_first_usable_addr(config.server_info)) ==
         -1)
@@ -50,7 +57,13 @@ static void sigint_handler(int _) { _exit(EXIT_SUCCESS); }
 
 static void sigalrm_handler(int _)
 {
-    test--;
+    uint8_t buffer[4096];
+    ssize_t bytes_read = read_queue(&queue, buffer, 4096);
+    if (bytes_read < 0)
+    {
+        fprintf(stderr, "Queue is empty.\n"); // TODO: remove this unsafe printf
+        fflush(stderr);
+    }
     return;
 }
 
@@ -148,11 +161,13 @@ static int stream_file_and_cancel_request_timeout(const int sockfd,
             else if (!is_request_successful)
             {
                 fprintf(stderr, "Request timed out.\n");
+                fflush(stderr);
                 return -1;
             }
             else
             {
-                printf("%d\n", test);
+                printf("%lu\n", get_queue_load(&queue));
+                fflush(stdout);
                 continue;
             }
         }
@@ -172,8 +187,11 @@ static int stream_file_and_cancel_request_timeout(const int sockfd,
             }
         }
 
-        test++;
-        printf("%d\n", test);
+        if (write_queue(&queue, buffer, bytes_read) < 0)
+        {
+            fprintf(stderr, "Queue is full.\n");
+        }
+        printf("%lu\n", get_queue_load(&queue));
         fflush(stdout);
     }
 
