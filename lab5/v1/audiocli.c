@@ -11,6 +11,7 @@
 
 #include "audiocli.h"
 #include "parameter_checkers.h"
+#include "pspacing.h"
 #include "queue.h"
 #include "request_codec.h"
 #include "socket_utils.h"
@@ -257,7 +258,17 @@ static int send_feedback(const int sockfd,
             update_packet_rate_methed_d(*packets_per_second, config);
 
     printf("pps: %Lf\n", *packets_per_second);
-    // uint8_t feedback[FEEDBACK_SIZE];
+
+    uint16_t packet_interval = to_pspacing_ms(*packets_per_second);
+    if (sendto(sockfd, &packet_interval, sizeof(uint16_t), 0, server_addr,
+               server_addr_len) < 0)
+    {
+        if (errno != EINTR) // Ignore EINTR from audio playback timer.
+        {
+            perror("sendto");
+            return -1;
+        }
+    }
 
     return 0;
 }
@@ -267,8 +278,8 @@ update_packet_rate_methed_c(const long double packets_per_second,
                             const Config *const config)
 {
     const long double bytes_per_second = packets_per_second * config->blocksize;
-    const unsigned long long occupancy_diff =
-        config->target_buffer_occupancy - get_queue_load(&queue);
+    const long long occupancy_diff =
+        (long long)config->target_buffer_occupancy - get_queue_load(&queue);
     const long double new_bytes_per_second =
         bytes_per_second + config->epsilon * occupancy_diff;
     printf("new bps: %Lf\n", new_bytes_per_second);
