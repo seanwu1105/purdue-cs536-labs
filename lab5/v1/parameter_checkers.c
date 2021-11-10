@@ -37,7 +37,7 @@ int check_blocksize(const unsigned long long blocksize)
     return 0;
 }
 
-int check_packets_per_second(const unsigned long long packets_per_second)
+int check_packets_per_second(const long double packets_per_second)
 {
     if (packets_per_second < MIN_PACKETS_PER_SECOND ||
         packets_per_second > MAX_PACKETS_PER_SECOND)

@@ -21,7 +21,7 @@ typedef struct
     uint16_t blocksize;
     unsigned long long buffer_size;
     unsigned long long target_buffer_occupancy;
-    uint16_t packets_per_second;
+    long double packets_per_second;
     unsigned short method;
     char *log_filename;
     long double epsilon;
@@ -40,10 +40,12 @@ static int send_feedback(const int sockfd,
                          const struct sockaddr *const server_addr,
                          const socklen_t server_addr_len,
                          const Config *const config,
-                         uint16_t *const packet_interval_ms);
-static uint16_t update_packet_rate_methed_c(const uint16_t packets_per_second,
-                                            const Config *const config);
-static uint16_t update_packet_rate_methed_d(const uint16_t packets_per_second,
-                                            const Config *const config);
+                         long double *const packets_per_second);
+static long double
+update_packet_rate_methed_c(const long double packets_per_second,
+                            const Config *const config);
+static long double
+update_packet_rate_methed_d(const long double packets_per_second,
+                            const Config *const config);
 
 #endif // _AUDIOCLI_H_

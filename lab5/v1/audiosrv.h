@@ -12,7 +12,7 @@
 typedef struct
 {
     struct addrinfo *server_info;
-    uint16_t packets_per_second;
+    long double packets_per_second;
     char *log_filename;
 } Config;
 

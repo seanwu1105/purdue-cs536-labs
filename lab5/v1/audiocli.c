@@ -93,9 +93,9 @@ static int get_config(int argc, char **argv, Config *config)
     config->buffer_size = strtoull(argv[5], NULL, 0);
     config->target_buffer_occupancy = strtoull(argv[6], NULL, 0);
 
-    const unsigned long long packets_per_second = strtoull(argv[7], NULL, 0);
+    const long double packets_per_second = strtold(argv[7], NULL);
     if (check_packets_per_second(packets_per_second) != 0) return -1;
-    config->packets_per_second = (uint16_t)packets_per_second;
+    config->packets_per_second = packets_per_second;
 
     config->method = (unsigned short)strtoul(argv[8], NULL, 0);
     config->log_filename = argv[9];
@@ -176,7 +176,7 @@ static int stream_file_and_cancel_request_timeout(const int sockfd,
 {
     unsigned short is_request_successful = 0;
 
-    uint16_t packets_per_second = 1000 / config->packets_per_second;
+    long double packets_per_second = config->packets_per_second;
     uint8_t buffer[config->blocksize];
     struct sockaddr server_addr;
     socklen_t server_addr_len = sizeof(server_addr);
@@ -247,7 +247,7 @@ static int send_feedback(const int sockfd,
                          const struct sockaddr *const server_addr,
                          const socklen_t server_addr_len,
                          const Config *const config,
-                         uint16_t *const packets_per_second)
+                         long double *const packets_per_second)
 {
     if (config->method == CONGESTION_CONTROL_METHOD_C)
         *packets_per_second =
@@ -256,28 +256,29 @@ static int send_feedback(const int sockfd,
         *packets_per_second =
             update_packet_rate_methed_d(*packets_per_second, config);
 
-    printf("pps: %u\n", *packets_per_second);
+    printf("pps: %Lf\n", *packets_per_second);
     // uint8_t feedback[FEEDBACK_SIZE];
 
     return 0;
 }
 
-static uint16_t update_packet_rate_methed_c(const uint16_t packets_per_second,
-                                            const Config *const config)
+static long double
+update_packet_rate_methed_c(const long double packets_per_second,
+                            const Config *const config)
 {
-    const long double bytes_per_second =
-        (long double)config->blocksize * packets_per_second;
-    const long double occupancy_diff =
-        (long double)config->target_buffer_occupancy - get_queue_load(&queue);
+    const long double bytes_per_second = packets_per_second * config->blocksize;
+    const unsigned long long occupancy_diff =
+        config->target_buffer_occupancy - get_queue_load(&queue);
     const long double new_bytes_per_second =
         bytes_per_second + config->epsilon * occupancy_diff;
     printf("new bps: %Lf\n", new_bytes_per_second);
     if (new_bytes_per_second < 0) return 0;
-    return (uint16_t)(new_bytes_per_second / config->blocksize);
+    return new_bytes_per_second / config->blocksize;
 }
 
-static uint16_t update_packet_rate_methed_d(const uint16_t packets_per_second,
-                                            const Config *const config)
+static long double
+update_packet_rate_methed_d(const long double packets_per_second,
+                            const Config *const config)
 {
     return 0;
 }

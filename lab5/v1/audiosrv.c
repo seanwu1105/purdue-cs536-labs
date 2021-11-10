@@ -9,6 +9,7 @@
 
 #include "audiosrv.h"
 #include "parameter_checkers.h"
+#include "pspacing.h"
 #include "request_codec.h"
 #include "socket_utils.h"
 
@@ -56,9 +57,9 @@ static int parse_args(int argc, char **argv, Config *config)
         0)
         return -1;
 
-    const unsigned long long packets_per_second = strtoull(argv[3], NULL, 0);
+    const long double packets_per_second = strtold(argv[3], NULL);
     if (check_packets_per_second(packets_per_second) != 0) return -1;
-    config->packets_per_second = (uint16_t)packets_per_second;
+    config->packets_per_second = packets_per_second;
 
     config->log_filename = argv[4];
 
@@ -153,11 +154,12 @@ static int send_file(const char *const filename, const uint16_t blocksize,
         printf(".");
         fflush(stdout);
 
+        uint16_t packet_interval_ms =
+            to_pspacing_ms(config->packets_per_second);
         struct timespec sleep_time = {
-            .tv_sec = config->packets_per_second == 1,
-            .tv_nsec = config->packets_per_second == 1
-                           ? 0
-                           : 1000000000 / config->packets_per_second};
+            .tv_sec = packet_interval_ms / 1000,
+            .tv_nsec = (packet_interval_ms % 1000) * 1000000,
+        };
 
         nanosleep(&sleep_time, NULL);
     }
