@@ -58,7 +58,7 @@ static int parse_args(int argc, char **argv, Config *config)
 
     const unsigned long long packets_per_second = strtoull(argv[3], NULL, 0);
     if (check_packets_per_second(packets_per_second) != 0) return -1;
-    config->packets_per_second = packets_per_second;
+    config->packets_per_second = (uint16_t)packets_per_second;
 
     config->log_filename = argv[4];
 

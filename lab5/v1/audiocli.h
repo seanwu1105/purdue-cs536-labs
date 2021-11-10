@@ -12,6 +12,7 @@
 #define CONGESTION_CONTROL_METHOD_D 1
 #define CONGESTION_CONTROL_PARAMETERS_FILENAME "audiocliparam.dat"
 #define FREAD_BUFFER_SIZE 4096
+#define FEEDBACK_SIZE 2
 
 typedef struct
 {
@@ -20,7 +21,7 @@ typedef struct
     uint16_t blocksize;
     unsigned long long buffer_size;
     unsigned long long target_buffer_occupancy;
-    unsigned long long packets_per_second;
+    uint16_t packets_per_second;
     unsigned short method;
     char *log_filename;
     long double epsilon;
@@ -38,9 +39,11 @@ static int stream_file_and_cancel_request_timeout(const int sockfd,
 static int send_feedback(const int sockfd,
                          const struct sockaddr *const server_addr,
                          const socklen_t server_addr_len,
-                         const Config *const config);
-static int update_influx_rate_methed_c();
-
-static int update_influx_rate_methed_d();
+                         const Config *const config,
+                         uint16_t *const packet_interval_ms);
+static uint16_t update_packet_rate_methed_c(const uint16_t packets_per_second,
+                                            const Config *const config);
+static uint16_t update_packet_rate_methed_d(const uint16_t packets_per_second,
+                                            const Config *const config);
 
 #endif // _AUDIOCLI_H_

@@ -5,6 +5,7 @@
 #define MIN_BLOCKSIZE 1
 #define MAX_BLOCKSIZE 65535
 #define MIN_PACKETS_PER_SECOND 1
+#define MAX_PACKETS_PER_SECOND 1000
 
 int check_filename(const char *const filename);
 int check_blocksize(const unsigned long long blocksize);
