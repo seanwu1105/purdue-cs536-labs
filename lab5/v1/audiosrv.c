@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <time.h>
 #include <unistd.h>
@@ -108,6 +109,8 @@ static int read_request(const int request_sockfd, char *const filename,
                         socklen_t *const client_addr_len)
 {
     uint8_t request[REQUEST_SIZE];
+    // Initialized request as it may be smaller than REQUEST_SIZE.
+    memset(request, 0, REQUEST_SIZE);
     const ssize_t bytes_read = recvfrom(request_sockfd, request, REQUEST_SIZE,
                                         0, client_addr, client_addr_len);
     if (bytes_read == -1)

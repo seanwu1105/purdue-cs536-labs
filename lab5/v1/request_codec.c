@@ -15,9 +15,9 @@ void encode_request(const char *const filename, const uint16_t blocksize,
 void decode_request(const uint8_t *const message, char *const filename,
                     uint16_t *const blocksize)
 {
+    memset(filename, 0, MAX_FILENAME_LEN + 1);
     *blocksize = *((uint16_t *)message);
     strncpy(filename,
             (const char *)(message + (REQUEST_SIZE - MAX_FILENAME_LEN)),
             MAX_FILENAME_LEN);
-    filename[MAX_FILENAME_LEN] = '\0';
 }
