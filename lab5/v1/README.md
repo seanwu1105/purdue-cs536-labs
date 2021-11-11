@@ -218,10 +218,65 @@ installed.
 apt install libasound2-dev
 ```
 
-## Prepare Your Audio Samples
+### Prepare Your Audio Samples
 
 Convert the audio samples with FFmpeg.
 
 ```sh
 ffmpeg -i your-music.wav -codec:a pcm_mulaw -ac 1 -ar 8000 -ab 64k your-music.au
 ```
+
+### Build
+
+Build `audiocli` and `audiosrv` with `make` command in the `/v1` directory.
+
+```sh
+make
+```
+
+Start the server first to get ready for accepting remote request.
+
+```sh
+./audiosrv <server-ip> <server-port> <packets-per-second> <log-filename>
+```
+
+Use `ip addr` to get the _server-ip_ to host server. Manually decide and set the
+_server-port_ also. _packets-per-second_ should be the same value used in the
+`audiocli`. Give a _log-filename_ to get the logging information about
+`pspacing` with its timestamp.
+
+After the server is running, start the new client in another terminal.
+
+```sh
+./audiocli <server-ip> <server-port> <audio-filename> <blocksize> <buffer-size> <target-buffer-occupancy> <packets-per-seconds> <method=[0(C)|1(D)]> <log-filename>
+```
+
+Set _server-ip_ and _server-port_ to the same value used in the `audiosrv`.
+Specify the target _audio-filename_ and make sure the file does exist on the
+working directory of the server. The unit of _blocksize_ is in bytes while the
+one of _buffer-size_ and _target-buffer-occupancy_ are in 4096 bytes.
+_packets-per-seconds_ should be the same value used in the `audiosrv`. Give a
+_log-filename_ to get the logging information about buffer occupancy with its
+timestamp.
+
+To stop a running audio client or server, send `SIGINT` with <kbd>ctrl</kbd> +
+<kbd>c</kbd> on Linux.
+
+### Logging File Visualization
+
+TODO
+
+## Design
+
+### `pspacing` (Packet Interval) Boundaries
+
+Since either method C or D might cause influx rate drop to zero, we need to make
+sure the streaming process does not halted on this case. We limit the maximum
+`pspacing` to 2000 milliseconds. Namely, if the influx rate approaches zero, the
+`pspacing` will be directly set to 2000 ms.
+
+### Asynchronous Client
+
+We use signal to send data from a circular buffer to audio device and use the
+main thread synchronously to receive data from a UDP socket to the circular
+buffer.
