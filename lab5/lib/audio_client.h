@@ -1,5 +1,5 @@
-#if !defined(_AUDIOCLI_H_)
-#define _AUDIOCLI_H_
+#if !defined(_AUDIO_CLIENT_H_)
+#define _AUDIO_CLIENT_H_
 
 #include <alsa/asoundlib.h>
 #include <netdb.h>
@@ -45,4 +45,4 @@ int send_feedback(const int sockfd, const struct sockaddr *const server_addr,
                   long double *const packets_per_second,
                   const Queue *const queue);
 
-#endif // _AUDIOCLI_H_
+#endif // _AUDIO_CLIENT_H_
