@@ -278,9 +278,9 @@ static int send_feedback(const int sockfd,
         *packets_per_second =
             update_packet_rate_methed_d(*packets_per_second, config);
 
-    printf("pps: %Lf\n", *packets_per_second);
-
     uint16_t packet_interval = to_pspacing_ms(*packets_per_second);
+    printf("ims: %hu\n", packet_interval);
+
     if (sendto(sockfd, &packet_interval, sizeof(uint16_t), 0, server_addr,
                server_addr_len) < 0)
     {
@@ -311,5 +311,17 @@ static long double
 update_packet_rate_methed_d(const long double packets_per_second,
                             const Config *const config)
 {
-    return 0;
+    const long double bytes_per_second = packets_per_second * config->blocksize;
+    const long long occupancy_diff =
+        (long long)config->target_buffer_occupancy - get_queue_load(&queue);
+
+    const long double audio_request_bytes_per_second =
+        (long double)1000.0 / AUDIO_REQUEST_INTERVAL_MS * AUDIO_FRAME_SIZE;
+    const long double net_influx_bytes_per_second =
+        packets_per_second - audio_request_bytes_per_second;
+    const long double new_bytes_per_second =
+        bytes_per_second + config->epsilon * occupancy_diff -
+        config->beta * net_influx_bytes_per_second;
+    if (new_bytes_per_second < 0) return 0;
+    return new_bytes_per_second / config->blocksize;
 }
