@@ -30,7 +30,8 @@
     "roadrunner_client.h": "c",
     "asoundlib.h": "c",
     "audiocli.h": "c",
-    "audio.h": "c"
+    "audio.h": "c",
+    "parameter_checkers.h": "c"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
