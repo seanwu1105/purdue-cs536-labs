@@ -63,7 +63,8 @@ int get_config(int argc, char **argv, Config *config,
     if (check_packets_per_second(packets_per_second) != 0) return -1;
     config->packets_per_second = packets_per_second;
 
-    config->method = (unsigned short)strtoul(argv[8], NULL, 0);
+    config->congestion_control_index =
+        (unsigned short)strtoul(argv[8], NULL, 0);
     config->log_filename = argv[9];
 
     if (read_parameters_file(config) < 0) return -1;
@@ -238,8 +239,9 @@ int send_feedback(const int sockfd, const struct sockaddr *const server_addr,
                   const Queue *const queue,
                   const CongestionControlMethod congestion_control_methods[])
 {
-    *packets_per_second = congestion_control_methods[config->method](
-        *packets_per_second, config, queue);
+    *packets_per_second =
+        congestion_control_methods[config->congestion_control_index](
+            *packets_per_second, config, queue);
 
     fprintf(stdout, "packets/s: %Lf\t", *packets_per_second);
     uint16_t packet_interval = to_pspacing_ms(*packets_per_second);

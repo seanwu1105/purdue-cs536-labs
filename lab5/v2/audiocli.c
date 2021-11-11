@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "../lib/audio_client.h"
+#include "../lib/congestion_controls.h"
 #include "../lib/queue.h"
 
 static Queue queue;
@@ -32,6 +33,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    // Set configuration.
     Config config;
     if (get_config(
             argc, argv, &config,
@@ -40,11 +42,17 @@ int main(int argc, char *argv[])
             "<packets-per-seconds> <method=[0(C)|1(D)]> <log-filename>\n") != 0)
         return 1;
 
-    uint8_t buffer[config.buffer_size + 1]; // +1 for circular FIFO capacity
+    // Build circular queue.
+    uint8_t buffer[config.buffer_size + 1]; // +1 for circular FIFO capacity.
     queue = (Queue){.head = 0,
                     .tail = 0,
                     .length = sizeof(buffer) / sizeof(uint8_t),
                     .data = buffer};
 
-    return start_client(&pcm_handle, &queue, &config);
+    // Register congestion control methods.
+    CongestionControlMethod congestion_control_methods[] = {
+        update_packet_rate_methed_c, update_packet_rate_methed_d};
+
+    return start_client(&pcm_handle, &queue, &config,
+                        congestion_control_methods);
 }

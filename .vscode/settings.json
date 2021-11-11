@@ -33,7 +33,9 @@
     "audio.h": "c",
     "parameter_checkers.h": "c",
     "congestion_controls.h": "c",
-    "audio_client.h": "c"
+    "audio_client.h": "c",
+    "*.tcc": "cpp",
+    "random": "cpp"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

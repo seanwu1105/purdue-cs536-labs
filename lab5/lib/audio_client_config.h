@@ -12,7 +12,7 @@ typedef struct
     unsigned long long buffer_size;
     unsigned long long target_buffer_occupancy;
     long double packets_per_second;
-    unsigned short method;
+    unsigned short congestion_control_index;
     char *log_filename;
     long double epsilon;
     long double beta;
