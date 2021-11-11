@@ -101,7 +101,8 @@ int read_parameters_file(Config *const config)
     return 0;
 }
 
-int start_client(snd_pcm_t **pcm_handle, Queue *const queue, Config *config)
+int start_client(snd_pcm_t **pcm_handle, Queue *const queue, Config *config,
+                 const CongestionControlMethod congestion_control_methods[])
 {
     int sockfd = -1;
     if ((sockfd = create_socket_with_first_usable_addr(config->server_info)) ==
@@ -126,8 +127,8 @@ int start_client(snd_pcm_t **pcm_handle, Queue *const queue, Config *config)
             perror("setitimer");
             return -1;
         }
-        if (start_streaming_and_cancel_request_timeout(sockfd, queue, config) ==
-            0)
+        if (start_streaming_and_cancel_request_timeout(
+                sockfd, queue, config, congestion_control_methods) == 0)
             break;
         else if (errno != EINTR)
             return -1;
@@ -157,9 +158,9 @@ int request_file(const int sockfd, const Config *const config)
     return 0;
 }
 
-int start_streaming_and_cancel_request_timeout(const int sockfd,
-                                               Queue *const queue,
-                                               const Config *const config)
+int start_streaming_and_cancel_request_timeout(
+    const int sockfd, Queue *const queue, const Config *const config,
+    const CongestionControlMethod congestion_control_methods[])
 {
     unsigned short is_request_successful = 0;
 
@@ -217,7 +218,8 @@ int start_streaming_and_cancel_request_timeout(const int sockfd,
         fflush(stdout);
 
         if (send_feedback(sockfd, &server_addr, server_addr_len, config,
-                          &packets_per_second, queue) < 0)
+                          &packets_per_second, queue,
+                          congestion_control_methods) < 0)
             return -1;
     }
 
@@ -233,14 +235,11 @@ int start_streaming_and_cancel_request_timeout(const int sockfd,
 int send_feedback(const int sockfd, const struct sockaddr *const server_addr,
                   const socklen_t server_addr_len, const Config *const config,
                   long double *const packets_per_second,
-                  const Queue *const queue)
+                  const Queue *const queue,
+                  const CongestionControlMethod congestion_control_methods[])
 {
-    if (config->method == CONGESTION_CONTROL_METHOD_C)
-        *packets_per_second =
-            update_packet_rate_methed_c(*packets_per_second, config, queue);
-    else if (config->method == CONGESTION_CONTROL_METHOD_D)
-        *packets_per_second =
-            update_packet_rate_methed_d(*packets_per_second, config, queue);
+    *packets_per_second = congestion_control_methods[config->method](
+        *packets_per_second, config, queue);
 
     fprintf(stdout, "packets/s: %Lf\t", *packets_per_second);
     uint16_t packet_interval = to_pspacing_ms(*packets_per_second);

@@ -31,7 +31,9 @@
     "asoundlib.h": "c",
     "audiocli.h": "c",
     "audio.h": "c",
-    "parameter_checkers.h": "c"
+    "parameter_checkers.h": "c",
+    "congestion_controls.h": "c",
+    "audio_client.h": "c"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
