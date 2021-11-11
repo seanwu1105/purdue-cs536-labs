@@ -17,6 +17,14 @@ static void sigalrm_handler(int _)
     if (stream_audio_to_device(&pcm_handle, &queue) < 0) _exit(EXIT_FAILURE);
 }
 
+long double update_packet_rate_methed_e(const long double packets_per_second,
+                                        const Config *const config,
+                                        const Queue *const queue)
+{
+    // TODO: Be creative(?) to implement this function.
+    return packets_per_second;
+}
+
 int main(int argc, char *argv[])
 {
     const struct sigaction sigint_action = {.sa_handler = sigint_handler};
@@ -35,11 +43,11 @@ int main(int argc, char *argv[])
 
     // Set configuration.
     Config config;
-    if (get_config(
-            argc, argv, &config,
-            "Usage: %s <server-ip> <server-port> <audio-filename> "
-            "<blocksize> <buffer-size> <target-buffer-occupancy> "
-            "<packets-per-seconds> <method=[0(C)|1(D)]> <log-filename>\n") != 0)
+    if (get_config(argc, argv, &config,
+                   "Usage: %s <server-ip> <server-port> <audio-filename> "
+                   "<blocksize> <buffer-size> <target-buffer-occupancy> "
+                   "<packets-per-seconds> <method=[0(C)|1(D)|2(E)]> "
+                   "<log-filename>\n") != 0)
         return 1;
 
     // Build circular queue.
@@ -51,7 +59,8 @@ int main(int argc, char *argv[])
 
     // Register congestion control methods.
     CongestionControlMethod congestion_control_methods[] = {
-        update_packet_rate_methed_c, update_packet_rate_methed_d};
+        update_packet_rate_methed_c, update_packet_rate_methed_d,
+        update_packet_rate_methed_e};
 
     return start_client(&pcm_handle, &queue, &config,
                         congestion_control_methods);
