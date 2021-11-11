@@ -77,7 +77,9 @@ static void sigalrm_handler(int _)
     ssize_t bytes_read = read_queue(&queue, buffer, 4096);
     if (bytes_read < 0)
     {
-        fprintf(stderr, "Queue is empty\n"); // TODO: remove this unsafe printf
+        // Though it is unsafe to use in signal handler, we print the error for
+        // debugging purposes only.
+        fprintf(stderr, "Queue is empty\n");
         fflush(stderr);
     }
 
@@ -218,11 +220,7 @@ static int stream_file_and_cancel_request_timeout(const int sockfd,
                 return -1;
             }
             else
-            {
-                printf("deq: %lu\n", get_queue_load(&queue));
-                fflush(stdout);
                 continue;
-            }
         }
 
         if (!is_request_successful)
@@ -248,7 +246,7 @@ static int stream_file_and_cancel_request_timeout(const int sockfd,
         {
             fprintf(stderr, "Queue is full\n");
         }
-        printf("enq: %lu\t", get_queue_load(&queue));
+        fprintf(stdout, "enqueued bytes: %lu\t", get_queue_load(&queue));
         fflush(stdout);
 
         if (send_feedback(sockfd, &server_addr, server_addr_len, config,
@@ -278,8 +276,9 @@ static int send_feedback(const int sockfd,
         *packets_per_second =
             update_packet_rate_methed_d(*packets_per_second, config);
 
+    fprintf(stdout, "packets per sec: %Lf\t", *packets_per_second);
     uint16_t packet_interval = to_pspacing_ms(*packets_per_second);
-    printf("ims: %hu\n", packet_interval);
+    fprintf(stdout, "packet interval (ms): %hu\n", packet_interval);
 
     if (sendto(sockfd, &packet_interval, sizeof(uint16_t), 0, server_addr,
                server_addr_len) < 0)
@@ -318,7 +317,7 @@ update_packet_rate_methed_d(const long double packets_per_second,
     const long double audio_request_bytes_per_second =
         (long double)1000.0 / AUDIO_REQUEST_INTERVAL_MS * AUDIO_FRAME_SIZE;
     const long double net_influx_bytes_per_second =
-        packets_per_second - audio_request_bytes_per_second;
+        bytes_per_second - audio_request_bytes_per_second;
     const long double new_bytes_per_second =
         bytes_per_second + config->epsilon * occupancy_diff -
         config->beta * net_influx_bytes_per_second;

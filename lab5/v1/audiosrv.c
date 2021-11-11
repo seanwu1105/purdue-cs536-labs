@@ -168,7 +168,7 @@ static int send_file(const char *const filename, const uint16_t blocksize,
             return -1;
         }
 
-        printf("sent: %lu\t", bytes_read);
+        fprintf(stdout, "sent bytes: %lu\t", bytes_read);
         if (receive_feedback(packet_sockfd, &packet_interval_ms) < 0)
         {
             close(packet_sockfd);
@@ -176,7 +176,7 @@ static int send_file(const char *const filename, const uint16_t blocksize,
             return -1;
         }
     }
-    printf("\n");
+    fprintf(stdout, "\n");
 
     if (ferror(file) != 0)
     {
@@ -214,7 +214,7 @@ static int receive_feedback(const int packet_sockfd,
     }
     else
     {
-        printf("recv: %hu\n", feedback);
+        fprintf(stdout, "received packet interval (ms): %hu\n", feedback);
         *packet_interval_ms = feedback;
     }
     return 0;
