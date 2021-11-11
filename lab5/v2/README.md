@@ -8,3 +8,7 @@ idea may seem reasonable, whether it actually pans out is another matter.
 Implement the method and evaluate its performance by comparing to the results of
 Problem 1. Submit the extended code in `v2/`. If Problem 1 is tackled as a group
 effort, the bonus problem must be solved as a group effort as well.
+
+## Project Structure
+
+TODO

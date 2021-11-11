@@ -12,7 +12,7 @@ support in Ubuntu on our lab machines, a slightly more complicated interface
 must be used to play back the content of an `.au` audio file on the default ALSA
 audio device of the pod and amber Linux PCs. To get familiar with performing
 audio playback, copy two sample audio files `pp.au` (short piece) and `kj.au`
-(longer piece) from the course directory, and runau
+(longer piece) from the course directory, and run
 
 ```sh
 /usr/bin/aplay pp.au
@@ -262,6 +262,18 @@ timestamp.
 To stop a running audio client or server, send `SIGINT` with <kbd>ctrl</kbd> +
 <kbd>c</kbd> on Linux.
 
+### Set Congestion Control Parameters
+
+You can set the parameters used in congestion controls (method C and D) in
+`audiocliparam.dat`. The first line is the value of _epsilon_ used in both
+method C and D; the second is the one of _beta_ used in method D. For example,
+the following text specify the _epsilon_ to `0.5` and _beta_ to `1.1`.
+
+```txt
+0.5
+1.1
+```
+
 ### Logging File Visualization
 
 TODO
@@ -280,3 +292,7 @@ sure the streaming process does not halted on this case. We limit the maximum
 We use signal to send data from a circular buffer to audio device and use the
 main thread synchronously to receive data from a UDP socket to the circular
 buffer.
+
+## Project Structure
+
+TODO
