@@ -1,0 +1,5 @@
+.vscode/
+testaudio
+*.wav
+audiocli
+audiosrv
