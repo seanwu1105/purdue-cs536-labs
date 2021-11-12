@@ -135,6 +135,13 @@ int start_client(snd_pcm_t **pcm_handle, Queue *const queue, Config *config,
             return -1;
     }
 
+    while (get_queue_load(queue) > 0)
+        if (stream_audio_to_device(pcm_handle, queue) < 0)
+        {
+            close(sockfd);
+            return -1;
+        }
+
     if (mulawclose(*pcm_handle) < 0)
     {
         close(sockfd);
