@@ -31,6 +31,7 @@ ssize_t read_queue(Queue *queue, uint8_t *buffer, size_t length)
         if (dequeue(queue, buffer + read) < 0) return -1;
         read++;
     }
+    if (logger(queue) < 0) return -1;
     return read;
 }
 
@@ -42,6 +43,7 @@ ssize_t write_queue(Queue *queue, uint8_t *data, size_t length)
         if (enqueue(queue, data[written]) < 0) return -1;
         written++;
     }
+    if (logger(queue) < 0) return -1;
     return written;
 }
 
@@ -51,4 +53,61 @@ size_t get_queue_load(Queue *queue)
         return queue->head - queue->tail;
     else
         return queue->length + queue->head - queue->tail;
+}
+
+size_t logger(Queue *queue)
+{
+    if (queue->first_timestemp)
+    {
+        queue->log_buffer = NULL;
+        size_t log_buffer_size = 0;
+        queue->log_stream =
+            open_memstream(&(queue->log_buffer), &log_buffer_size);
+
+        if (!queue->log_stream)
+        {
+            perror("open_memstream");
+            return -1;
+        }
+        if (gettimeofday(&(queue->init_timestemp), NULL) < 0)
+        {
+            perror("gettimeofday");
+            return -1;
+        }
+        fprintf(queue->log_stream, "time (us), Q(t) (bytes)\n",
+                get_queue_load(queue));
+        fprintf(queue->log_stream, "0, %ld\n", get_queue_load(queue));
+        queue->first_timestemp = 0;
+    }
+    else
+    {
+        struct timeval cur_timestemp;
+        if (gettimeofday(&cur_timestemp, NULL) < 0)
+        {
+            perror("gettimeofday");
+            return -1;
+        }
+        fprintf(queue->log_stream, "%ld, %ld\n",
+                (cur_timestemp.tv_sec * 1000000 + cur_timestemp.tv_usec -
+                 queue->init_timestemp.tv_sec * 1000000 -
+                 queue->init_timestemp.tv_usec),
+                get_queue_load(queue));
+    }
+    return 0;
+}
+
+size_t write_log(Queue *queue, char *file_name)
+{
+    fflush(queue->log_stream);
+    FILE *log_file = fopen(file_name, "w");
+    if (log_file == NULL)
+    {
+        perror("fopen");
+        return -1;
+    }
+    fputs(queue->log_buffer, log_file);
+    fclose(queue->log_stream);
+    fclose(log_file);
+
+    return 0;
 }

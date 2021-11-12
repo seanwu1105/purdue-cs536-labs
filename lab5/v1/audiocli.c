@@ -16,7 +16,7 @@
 #include "queue.h"
 #include "request_codec.h"
 #include "socket_utils.h"
-// 123
+
 Queue queue;
 snd_pcm_t *pcm_handle;
 
@@ -43,26 +43,27 @@ int main(int argc, char *argv[])
     queue = (Queue){.head = 0,
                     .tail = 0,
                     .length = sizeof(buffer) / sizeof(uint8_t),
-                    .data = buffer};
+                    .data = buffer,
+                    .first_timestemp = 1};
 
     int sockfd = -1;
     if ((sockfd = create_socket_with_first_usable_addr(config.server_info)) ==
         -1)
         return -1;
 
-    if (mulawopen(&pcm_handle) < 0)
+    /*if (mulawopen(&pcm_handle) < 0)
     {
         close(sockfd);
         return -1;
-    }
+    }*/
 
     int status = run(sockfd, &config);
 
-    if (mulawclose(pcm_handle) < 0)
+    /*if (mulawclose(pcm_handle) < 0)
     {
         close(sockfd);
         return -1;
-    }
+    }*/
 
     close(sockfd);
 
@@ -83,8 +84,9 @@ static void sigalrm_handler(int _)
         fflush(stderr);
     }
 
-    if (bytes_read > 0)
-        if (mulawwrite(pcm_handle, buffer, bytes_read) < 0) _exit(EXIT_FAILURE);
+    /*if (bytes_read > 0)
+        if (mulawwrite(pcm_handle, buffer, bytes_read) < 0)
+       _exit(EXIT_FAILURE);*/
 }
 
 static int get_config(int argc, char **argv, Config *config)
@@ -174,6 +176,9 @@ static int run(const int sockfd, Config *config)
         else if (errno != EINTR)
             return -1;
     }
+
+    write_log(&queue, config->log_filename);
+
     return 0;
 }
 
