@@ -47,7 +47,8 @@ int main(int argc, char *argv[])
     queue = (Queue){.head = 0,
                     .tail = 0,
                     .length = sizeof(buffer) / sizeof(uint8_t),
-                    .data = buffer};
+                    .data = buffer,
+                    .first_timestemp = 1};
 
     // Register congestion control methods.
     CongestionControlMethod congestion_control_methods[] = {

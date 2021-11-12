@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -57,6 +58,7 @@ int start_server(Config *config)
     char filename[MAX_FILENAME_LEN + 1];
     struct sockaddr client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
+    uint8_t child_cnt = 0;
     while (1)
     {
         if (read_request(request_sockfd, filename, &blocksize, &client_addr,
@@ -78,9 +80,10 @@ int start_server(Config *config)
             // Child process
             close(request_sockfd);
             send_file(filename, blocksize, config, &client_addr,
-                      client_addr_len);
+                      client_addr_len, child_cnt);
             exit(EXIT_SUCCESS);
         }
+        ++child_cnt;
     }
 
     close(request_sockfd);
@@ -108,7 +111,7 @@ int read_request(const int request_sockfd, char *const filename,
 
 int send_file(const char *const filename, const uint16_t blocksize,
               Config *const config, struct sockaddr *const client_addr,
-              const socklen_t client_addr_len)
+              const socklen_t client_addr_len, const uint8_t child_cnt)
 {
     FILE *const file = fopen(filename, "r");
     if (file == NULL)
@@ -125,6 +128,19 @@ int send_file(const char *const filename, const uint16_t blocksize,
         return -1;
     }
 
+    uint8_t first_timestemp = 1;
+    struct timeval init_timestemp, cur_timestemp;
+
+    char *log_buffer = NULL;
+    size_t log_buffer_size = 0;
+    FILE *log_stream = open_memstream(&log_buffer, &log_buffer_size);
+    if (!log_stream)
+    {
+        perror("open_memstream");
+        fclose(file);
+        return -1;
+    }
+
     uint16_t packet_interval_ms = to_pspacing_ms(config->packets_per_second);
     uint8_t buffer[blocksize];
     size_t bytes_read;
@@ -136,7 +152,34 @@ int send_file(const char *const filename, const uint16_t blocksize,
             perror("sendto");
             close(packet_sockfd);
             fclose(file);
+            fclose(log_stream);
             return -1;
+        }
+
+        if (first_timestemp)
+        {
+            if (gettimeofday(&init_timestemp, NULL) < 0)
+            {
+                perror("gettimeofday");
+                fclose(file);
+                return -1;
+            }
+            fprintf(log_stream, "time (us), pspacing (ms)\n");
+            fprintf(log_stream, "0, %d\n", packet_interval_ms);
+            first_timestemp = 0;
+        }
+        else
+        {
+            if (gettimeofday(&cur_timestemp, NULL) < 0)
+            {
+                perror("gettimeofday");
+                fclose(file);
+                return -1;
+            }
+            fprintf(log_stream, "%ld, %d\n",
+                    (cur_timestemp.tv_sec * 1000000 + cur_timestemp.tv_usec -
+                     init_timestemp.tv_sec * 1000000 - init_timestemp.tv_usec),
+                    packet_interval_ms);
         }
 
         struct timespec sleep_time = {
@@ -148,6 +191,7 @@ int send_file(const char *const filename, const uint16_t blocksize,
             perror("nanosleep");
             close(packet_sockfd);
             fclose(file);
+            fclose(log_stream);
             return -1;
         }
 
@@ -156,6 +200,7 @@ int send_file(const char *const filename, const uint16_t blocksize,
         {
             close(packet_sockfd);
             fclose(file);
+            fclose(log_stream);
             return -1;
         }
     }
@@ -166,6 +211,7 @@ int send_file(const char *const filename, const uint16_t blocksize,
         perror("fread");
         close(packet_sockfd);
         fclose(file);
+        fclose(log_stream);
         return -1;
     }
 
@@ -179,6 +225,20 @@ int send_file(const char *const filename, const uint16_t blocksize,
 
     close(packet_sockfd);
     fprintf(stdout, "Transmission completed: %s\n", filename);
+
+    char log_filename[50];
+    fflush(log_stream);
+    sprintf(log_filename, "%s%d", config->log_filename, child_cnt);
+    FILE *log_file = fopen(log_filename, "w");
+    if (log_file == NULL)
+    {
+        perror("fopen");
+        return -1;
+    }
+    fputs(log_buffer, log_file);
+    fclose(log_stream);
+    fclose(log_file);
+
     return 0;
 }
 
