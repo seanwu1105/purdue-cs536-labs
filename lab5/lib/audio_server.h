@@ -23,7 +23,7 @@ int read_request(const int request_sockfd, char *const filename,
                  socklen_t *const client_addr_len);
 int send_file(const char *const filename, const uint16_t blocksize,
               Config *const config, struct sockaddr *const client_addr,
-              const socklen_t client_addr_len, const uint8_t child_cnt);
+              const socklen_t client_addr_len, const unsigned int client_id);
 int receive_feedback(const int packet_sockfd,
                      uint16_t *const packet_interval_ms);
 int send_eof(const int packet_sockfd, struct sockaddr *const client_addr,
