@@ -141,12 +141,6 @@ int start_client(snd_pcm_t **pcm_handle, Queue *const queue, Config *config,
         return -1;
     }
 
-    if (write_log(queue, config->log_filename) < 0)
-    {
-        close(sockfd);
-        return -1;
-    }
-
     close(sockfd);
     return 0;
 }
