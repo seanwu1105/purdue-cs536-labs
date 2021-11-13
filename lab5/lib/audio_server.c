@@ -6,10 +6,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "audio_server.h"
+#include "logger.h"
 #include "parameter_checkers.h"
 #include "pspacing.h"
 #include "request_codec.h"
@@ -57,6 +59,7 @@ int start_server(Config *config)
     char filename[MAX_FILENAME_LEN + 1];
     struct sockaddr client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
+    unsigned int client_count = 0;
     while (1)
     {
         if (read_request(request_sockfd, filename, &blocksize, &client_addr,
@@ -78,9 +81,10 @@ int start_server(Config *config)
             // Child process
             close(request_sockfd);
             send_file(filename, blocksize, config, &client_addr,
-                      client_addr_len);
+                      client_addr_len, client_count);
             exit(EXIT_SUCCESS);
         }
+        ++client_count;
     }
 
     close(request_sockfd);
@@ -108,7 +112,7 @@ int read_request(const int request_sockfd, char *const filename,
 
 int send_file(const char *const filename, const uint16_t blocksize,
               Config *const config, struct sockaddr *const client_addr,
-              const socklen_t client_addr_len)
+              const socklen_t client_addr_len, const unsigned int client_id)
 {
     FILE *const file = fopen(filename, "r");
     if (file == NULL)
@@ -125,6 +129,19 @@ int send_file(const char *const filename, const uint16_t blocksize,
         return -1;
     }
 
+    struct timeval init_time;
+    char *logging_buffer = NULL;
+    size_t logging_buffer_size = 0;
+    FILE *const logging_stream =
+        open_memstream(&logging_buffer, &logging_buffer_size);
+    if (logging_stream == NULL)
+    {
+        perror("open_memstream");
+        fclose(file);
+        return -1;
+    }
+
+    unsigned short is_first = 1;
     uint16_t packet_interval_ms = to_pspacing_ms(config->packets_per_second);
     uint8_t buffer[blocksize];
     size_t bytes_read;
@@ -136,6 +153,18 @@ int send_file(const char *const filename, const uint16_t blocksize,
             perror("sendto");
             close(packet_sockfd);
             fclose(file);
+            fclose(logging_stream);
+            free(logging_buffer);
+            return -1;
+        }
+
+        if (log_stream(logging_stream, packet_interval_ms, &init_time,
+                       &is_first, "pspacing (ms)") < 0)
+        {
+            close(packet_sockfd);
+            fclose(file);
+            fclose(logging_stream);
+            free(logging_buffer);
             return -1;
         }
 
@@ -148,6 +177,8 @@ int send_file(const char *const filename, const uint16_t blocksize,
             perror("nanosleep");
             close(packet_sockfd);
             fclose(file);
+            fclose(logging_stream);
+            free(logging_buffer);
             return -1;
         }
 
@@ -156,16 +187,22 @@ int send_file(const char *const filename, const uint16_t blocksize,
         {
             close(packet_sockfd);
             fclose(file);
+            fclose(logging_stream);
+            free(logging_buffer);
             return -1;
         }
     }
     fprintf(stdout, "\n");
+
+    fflush(logging_stream);
+    fclose(logging_stream);
 
     if (ferror(file) != 0)
     {
         perror("fread");
         close(packet_sockfd);
         fclose(file);
+        free(logging_buffer);
         return -1;
     }
 
@@ -174,11 +211,22 @@ int send_file(const char *const filename, const uint16_t blocksize,
     if (send_eof(packet_sockfd, client_addr, client_addr_len) < 0)
     {
         close(packet_sockfd);
+        free(logging_buffer);
         return -1;
     }
 
     close(packet_sockfd);
     fprintf(stdout, "Transmission completed: %s\n", filename);
+
+    char log_filename[FILENAME_MAX];
+    sprintf(log_filename, "%s%u", config->log_filename, client_id);
+    if (dump_logging(log_filename, logging_buffer) < 0)
+    {
+        free(logging_buffer);
+        return -1;
+    }
+
+    free(logging_buffer);
     return 0;
 }
 

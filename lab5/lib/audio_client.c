@@ -13,13 +13,17 @@
 #include "audio.h"
 #include "audio_client.h"
 #include "congestion_controls.h"
+#include "logger.h"
 #include "parameter_checkers.h"
 #include "pspacing.h"
 #include "queue.h"
 #include "request_codec.h"
 #include "socket_utils.h"
 
-int stream_audio_to_device(snd_pcm_t **pcm_handle, Queue *queue)
+int stream_audio_to_device(snd_pcm_t **pcm_handle, Queue *queue,
+                           FILE *const logging_stream,
+                           struct timeval *const init_time,
+                           unsigned short *const is_first)
 {
     uint8_t buffer[AUDIO_FRAME_SIZE];
     ssize_t bytes_read = read_queue(queue, buffer, AUDIO_FRAME_SIZE);
@@ -33,6 +37,10 @@ int stream_audio_to_device(snd_pcm_t **pcm_handle, Queue *queue)
 
     if (bytes_read > 0)
         if (mulawwrite(*pcm_handle, buffer, bytes_read) < 0) return -1;
+
+    if (log_stream(logging_stream, get_queue_load(queue), init_time, is_first,
+                   "Q(t) (bytes)") < 0)
+        return -1;
     return 0;
 }
 
@@ -103,7 +111,9 @@ int read_parameters_file(Config *const config)
 }
 
 int start_client(snd_pcm_t **pcm_handle, Queue *const queue, Config *config,
-                 const CongestionControlMethod congestion_control_methods[])
+                 const CongestionControlMethod congestion_control_methods[],
+                 FILE *const logging_stream, struct timeval *const init_time,
+                 unsigned short *const is_first)
 {
     int sockfd = -1;
     if ((sockfd = create_socket_with_first_usable_addr(config->server_info)) ==
@@ -129,11 +139,20 @@ int start_client(snd_pcm_t **pcm_handle, Queue *const queue, Config *config,
             return -1;
         }
         if (start_streaming_and_cancel_request_timeout(
-                sockfd, queue, config, congestion_control_methods) == 0)
+                sockfd, queue, config, congestion_control_methods,
+                logging_stream, init_time, is_first) == 0)
             break;
         else if (errno != EINTR)
             return -1;
     }
+
+    while (get_queue_load(queue) > 0)
+        if (stream_audio_to_device(pcm_handle, queue, logging_stream, init_time,
+                                   is_first) < 0)
+        {
+            close(sockfd);
+            return -1;
+        }
 
     if (mulawclose(*pcm_handle) < 0)
     {
@@ -161,7 +180,9 @@ int request_file(const int sockfd, const Config *const config)
 
 int start_streaming_and_cancel_request_timeout(
     const int sockfd, Queue *const queue, const Config *const config,
-    const CongestionControlMethod congestion_control_methods[])
+    const CongestionControlMethod congestion_control_methods[],
+    FILE *const logging_stream, struct timeval *const init_time,
+    unsigned short *const is_first)
 {
     unsigned short is_request_successful = 0;
 
@@ -212,9 +233,9 @@ int start_streaming_and_cancel_request_timeout(
         // read pointer (tail). There is a possibility that the buffer load is
         // off by one (not up-to-date), but this is an acceptable trade-off.
         if (write_queue(queue, buffer, bytes_read) < 0)
-        {
             fprintf(stderr, "Queue is full\n");
-        }
+        log_stream(logging_stream, get_queue_load(queue), init_time, is_first,
+                   "Q(t) (bytes)");
         fprintf(stdout, "enqueued (B): %lu\t", get_queue_load(queue));
         fflush(stdout);
 

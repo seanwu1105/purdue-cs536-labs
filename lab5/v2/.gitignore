@@ -3,3 +3,4 @@ testaudio
 *.wav
 audiocli
 audiosrv
+*log*
