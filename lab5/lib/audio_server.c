@@ -59,7 +59,7 @@ int start_server(Config *config)
     char filename[MAX_FILENAME_LEN + 1];
     struct sockaddr client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
-    unsigned int client_count = 0;
+    unsigned int client_count = 1;
     while (1)
     {
         if (read_request(request_sockfd, filename, &blocksize, &client_addr,
