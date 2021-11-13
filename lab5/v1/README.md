@@ -276,7 +276,7 @@ the following text specify the _epsilon_ to `0.5` and _beta_ to `1.1`.
 
 ### Logging File Visualization
 
-TODO
+See [`../plot/`](../plot/README.md).
 
 ## Design
 
@@ -296,3 +296,13 @@ buffer.
 ## Project Structure
 
 TODO
+
+## Analysis
+
+According to the plots, the influx rate (`pspacing`) and buffer load are
+unstable with congestion control method C for both files. This causes the audio
+playing intermittently as the buffer gets empty or full periodically.
+
+On the other hand, with method D, the `pspacing` and buffer load are both stable
+though some fluctuations occur due to the network status. Thus, the audio plays
+smoothly without getting the buffer empty or full.
