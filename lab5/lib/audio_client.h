@@ -17,16 +17,23 @@
 #define FREAD_BUFFER_SIZE 4096
 #define BUFFER_UNIT_SIZE AUDIO_FRAME_SIZE
 
-int stream_audio_to_device(snd_pcm_t **pcm_handle, Queue *queue);
+int stream_audio_to_device(snd_pcm_t **pcm_handle, Queue *queue,
+                           FILE *const logging_stream,
+                           struct timeval *const init_time,
+                           unsigned short *const is_first);
 int get_config(int argc, char **argv, Config *config,
                const char *const help_msg);
 int read_parameters_file(Config *const config);
 int start_client(snd_pcm_t **pcm_handle, Queue *const queue, Config *config,
-                 const CongestionControlMethod congestion_control_methods[]);
+                 const CongestionControlMethod congestion_control_methods[],
+                 FILE *const logging_stream, struct timeval *const init_time,
+                 unsigned short *const is_first);
 int request_file(const int sockfd, const Config *const config);
 int start_streaming_and_cancel_request_timeout(
     const int sockfd, Queue *const queue, const Config *const config,
-    const CongestionControlMethod congestion_control_methods[]);
+    const CongestionControlMethod congestion_control_methods[],
+    FILE *const logging_stream, struct timeval *const init_time,
+    unsigned short *const is_first);
 int send_feedback(const int sockfd, const struct sockaddr *const server_addr,
                   const socklen_t server_addr_len, const Config *const config,
                   long double *const packets_per_second,

@@ -5,16 +5,24 @@
 
 #include "../lib/audio_client.h"
 #include "../lib/congestion_controls.h"
+#include "../lib/logger.h"
 #include "../lib/queue.h"
 
 static Queue queue;
 static snd_pcm_t *pcm_handle = NULL;
 
+// For logging
+FILE *logging_stream;
+struct timeval init_time;
+unsigned short is_first = 1;
+
 static void sigint_handler(int _) { _exit(EXIT_SUCCESS); }
 
 static void sigalrm_handler(int _)
 {
-    if (stream_audio_to_device(&pcm_handle, &queue) < 0) _exit(EXIT_FAILURE);
+    if (stream_audio_to_device(&pcm_handle, &queue, logging_stream, &init_time,
+                               &is_first) < 0)
+        _exit(EXIT_FAILURE);
 }
 
 long double update_packet_rate_methed_e(const long double packets_per_second,
@@ -48,7 +56,7 @@ int main(int argc, char *argv[])
                    "<blocksize> <buffer-size> <target-buffer-occupancy> "
                    "<packets-per-seconds> <method=[0(C)|1(D)|2(E)]> "
                    "<log-filename>\n") != 0)
-        return 1;
+        return -1;
 
     // Build circular queue.
     uint8_t buffer[config.buffer_size + 1]; // +1 for circular FIFO capacity.
@@ -62,6 +70,23 @@ int main(int argc, char *argv[])
         update_packet_rate_methed_c, update_packet_rate_methed_d,
         update_packet_rate_methed_e};
 
-    return start_client(&pcm_handle, &queue, &config,
-                        congestion_control_methods);
+    char *logging_buffer = NULL;
+    size_t logging_buffer_size = 0;
+    logging_stream = open_memstream(&logging_buffer, &logging_buffer_size);
+    if (logging_stream == NULL)
+    {
+        perror("open_memstream");
+        return -1;
+    }
+
+    if (start_client(&pcm_handle, &queue, &config, congestion_control_methods,
+                     logging_stream, &init_time, &is_first) < 0)
+        return -1;
+
+    fflush(logging_stream);
+    fclose(logging_stream);
+    if (dump_logging(config.log_filename, logging_buffer) < 0) return -1;
+
+    free(logging_buffer);
+    return 0;
 }

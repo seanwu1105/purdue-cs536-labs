@@ -130,11 +130,10 @@ int send_file(const char *const filename, const uint16_t blocksize,
     }
 
     struct timeval init_time;
-
     char *logging_buffer = NULL;
-    size_t log_buffer_size = 0;
+    size_t logging_buffer_size = 0;
     FILE *const logging_stream =
-        open_memstream(&logging_buffer, &log_buffer_size);
+        open_memstream(&logging_buffer, &logging_buffer_size);
     if (logging_stream == NULL)
     {
         perror("open_memstream");
