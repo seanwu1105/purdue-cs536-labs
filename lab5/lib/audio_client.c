@@ -35,8 +35,8 @@ int stream_audio_to_device(snd_pcm_t **pcm_handle, Queue *queue,
         fflush(stderr);
     }
 
-    if (bytes_read > 0)
-        if (mulawwrite(*pcm_handle, buffer, bytes_read) < 0) return -1;
+//    if (bytes_read > 0)
+//        if (mulawwrite(*pcm_handle, buffer, bytes_read) < 0) return -1;
 
     if (log_stream(logging_stream, get_queue_load(queue), init_time, is_first,
                    "Q(t) (bytes)") < 0)
@@ -107,6 +107,10 @@ int read_parameters_file(Config *const config)
     if (val == NULL) return 0;
     config->beta = strtold(val, NULL);
 
+    val = strtok(NULL, "  \t\n\0");
+    if (val == NULL) return 0;
+    config->alpha = strtold(val, NULL);
+
     return 0;
 }
 
@@ -120,11 +124,11 @@ int start_client(snd_pcm_t **pcm_handle, Queue *const queue, Config *config,
         -1)
         return -1;
 
-    if (mulawopen(pcm_handle) < 0)
-    {
-        close(sockfd);
-        return -1;
-    }
+//    if (mulawopen(pcm_handle) < 0)
+//    {
+//        close(sockfd);
+//        return -1;
+//    }
 
     while (1)
     {
@@ -154,11 +158,11 @@ int start_client(snd_pcm_t **pcm_handle, Queue *const queue, Config *config,
             return -1;
         }
 
-    if (mulawclose(*pcm_handle) < 0)
-    {
-        close(sockfd);
-        return -1;
-    }
+//    if (mulawclose(*pcm_handle) < 0)
+//    {
+//        close(sockfd);
+//        return -1;
+//    }
 
     close(sockfd);
     return 0;

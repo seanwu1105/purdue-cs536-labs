@@ -16,6 +16,7 @@ typedef struct
     char *log_filename;
     long double epsilon;
     long double beta;
+    long double alpha;
 } Config;
 
 #endif // _AUDIO_CLIENT_CONFIG_H_
