@@ -14,8 +14,9 @@ typedef struct
     long double packets_per_second;
     unsigned short congestion_control_index;
     char *log_filename;
-    long double epsilon;
-    long double beta;
+    long double epsilon; // The weight of P term in PID formula
+    long double beta;    // The weight of I term in PID formula
+    long double alpha;   // The weight of D term in PID formula
 } Config;
 
 #endif // _AUDIO_CLIENT_CONFIG_H_

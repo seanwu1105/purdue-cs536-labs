@@ -9,6 +9,24 @@ Implement the method and evaluate its performance by comparing to the results of
 Problem 1. Submit the extended code in `v2/`. If Problem 1 is tackled as a group
 effort, the bonus problem must be solved as a group effort as well.
 
-## Project Structure
+## Definition of Method E
 
-TODO
+To improving the method D, we decide to implement the derivative term of the PID
+controller. The formula is derived as follows.
+
+![](https://i.imgur.com/mO9svS2.png)
+
+![](https://i.imgur.com/2KsEFvk.png)
+
+We can differentiate both sides of the equation.
+
+![](https://i.imgur.com/xm4iYtv.png)
+
+Assuming _Kd_ is always larger or equal to zero, we can transpose the derivative
+term and finally get the _lambda(t + 1)_.
+
+![](https://i.imgur.com/YyoroF4.png)
+
+![](https://i.imgur.com/NDx69Rb.png)
+
+![](https://i.imgur.com/3e0tTWE.png)
