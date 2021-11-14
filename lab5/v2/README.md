@@ -14,19 +14,25 @@ effort, the bonus problem must be solved as a group effort as well.
 To improving the method D, we decide to implement the derivative term of the PID
 controller. The formula is derived as follows.
 
-![](https://i.imgur.com/mO9svS2.png)
+<!-- $$
+\lambda(t)\ =\ K_pe(t)\ +\ K_i\int_{0}^{\tau}\ e(\tau)\ d\tau\ +\ K_d\dfrac{d}{dt}e(t)
+$$ -->
 
-![](https://i.imgur.com/2KsEFvk.png)
+<div align="center"><img style="background: white;" src="https://render.githubusercontent.com/render/math?math=%5Clambda(t)%5C%20%3D%5C%20K_pe(t)%5C%20%2B%5C%20K_i%5Cint_%7B0%7D%5E%7B%5Ctau%7D%5C%20e(%5Ctau)%5C%20d%5Ctau%5C%20%2B%5C%20K_d%5Cdfrac%7Bd%7D%7Bdt%7De(t)"></div>
 
 We can differentiate both sides of the equation.
 
-![](https://i.imgur.com/xm4iYtv.png)
+<!-- $$
+\dfrac{d}{dt}\lambda(t)\ =\ -K_p(\lambda(t) - \gamma)\ +\ K_i(Q^* - Q(t))\ -\ K_d\dfrac{d}{dt}\lambda(t)
+$$ -->
+
+<div align="center"><img style="background: white;" src="https://render.githubusercontent.com/render/math?math=%5Cdfrac%7Bd%7D%7Bdt%7D%5Clambda(t)%5C%20%3D%5C%20-K_p(%5Clambda(t)%20-%20%5Cgamma)%5C%20%2B%5C%20K_i(Q%5E*%20-%20Q(t))%5C%20-%5C%20K_d%5Cdfrac%7Bd%7D%7Bdt%7D%5Clambda(t)"></div>
 
 Assuming _Kd_ is always larger or equal to zero, we can transpose the derivative
 term and finally get the _lambda(t + 1)_.
 
-![](https://i.imgur.com/YyoroF4.png)
+<!-- $$
+\lambda(t + 1)\ =\ \lambda(t)\ +\ \dfrac{-K_p(\lambda(t) - \gamma)\ +\ K_i(Q^* - Q(t))}{(1\ +\ K_d)}
+$$ -->
 
-![](https://i.imgur.com/NDx69Rb.png)
-
-![](https://i.imgur.com/3e0tTWE.png)
+<div align="center"><img style="background: white;" src="https://render.githubusercontent.com/render/math?math=%5Clambda(t%20%2B%201)%5C%20%3D%5C%20%5Clambda(t)%5C%20%2B%5C%20%5Cdfrac%7B-K_p(%5Clambda(t)%20-%20%5Cgamma)%5C%20%2B%5C%20K_i(Q%5E*%20-%20Q(t))%7D%7B(1%5C%20%2B%5C%20K_d)%7D"></div>
