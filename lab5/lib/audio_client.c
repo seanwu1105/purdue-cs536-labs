@@ -84,6 +84,7 @@ int read_parameters_file(Config *const config)
 {
     config->epsilon = 0;
     config->beta = 0;
+    config->alpha = 0;
 
     FILE *const file = fopen(CONGESTION_CONTROL_PARAMETERS_FILENAME, "r");
     if (file == NULL)
