@@ -31,16 +31,14 @@ long double update_packet_rate_methed_e(const long double packets_per_second,
                                         const Config *const config,
                                         const Queue *const queue)
 {
-    // TODO: Be creative(?) to implement this function.
     const long double bytes_per_second = packets_per_second * config->blocksize;
     const long long occupancy_diff =
-        (long long)config->target_buffer_occupancy - get_queue_load(queue); // Q* - Q(t)
-        //printf("cumu diff: %lld\t", cumulative_diff);
+        (long long)config->target_buffer_occupancy - get_queue_load(queue);
 
-    cumulative_diff += occupancy_diff * (1 / packets_per_second); // remove const or other approach?
+    cumulative_diff += occupancy_diff * (1 / packets_per_second);
 
     const long double audio_request_bytes_per_second =
-        (long double)1000.0 / AUDIO_REQUEST_INTERVAL_MS * AUDIO_FRAME_SIZE; // gamma
+        (long double)1000.0 / AUDIO_REQUEST_INTERVAL_MS * AUDIO_FRAME_SIZE;
     const long double net_influx_bytes_per_second =
         bytes_per_second - audio_request_bytes_per_second;
 
