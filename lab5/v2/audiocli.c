@@ -16,8 +16,6 @@ FILE *logging_stream;
 struct timeval init_time;
 unsigned short is_first = 1;
 
-long double cumulative_diff = 0;
-
 static void sigint_handler(int _) { _exit(EXIT_SUCCESS); }
 
 static void sigalrm_handler(int _)
@@ -35,8 +33,6 @@ long double update_packet_rate_methed_e(const long double packets_per_second,
     const long long occupancy_diff =
         (long long)config->target_buffer_occupancy - get_queue_load(queue);
 
-    cumulative_diff += occupancy_diff * (1 / packets_per_second);
-
     const long double audio_request_bytes_per_second =
         (long double)1000.0 / AUDIO_REQUEST_INTERVAL_MS * AUDIO_FRAME_SIZE;
     const long double net_influx_bytes_per_second =
@@ -46,9 +42,6 @@ long double update_packet_rate_methed_e(const long double packets_per_second,
         bytes_per_second +
         (config->epsilon * occupancy_diff -
         config->beta * net_influx_bytes_per_second) / (1 + config->alpha);
-//        config->beta * occupancy_diff +
-//        config->epsilon * cumulative_diff -
-//        config->alpha * net_influx_bytes_per_second;
 
     if (new_bytes_per_second < 0) return 0;
     return new_bytes_per_second / config->blocksize;
