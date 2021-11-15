@@ -36,3 +36,10 @@ term and finally get the _lambda(t + 1)_.
 $$ -->
 
 <div align="center"><img style="background: white;" src="https://render.githubusercontent.com/render/math?math=%5Clambda(t%20%2B%201)%5C%20%3D%5C%20%5Clambda(t)%5C%20%2B%5C%20%5Cdfrac%7B-K_p(%5Clambda(t)%20-%20%5Cgamma)%5C%20%2B%5C%20K_i(Q%5E*%20-%20Q(t))%7D%7B(1%5C%20%2B%5C%20K_d)%7D"></div>
+
+## Analysis
+
+After apply the "D" term of the PID formula, the plots indicate that the
+transmission is more stable compared to the plots of method D. Though there are
+several unstable events possibility caused by the network status at the time,
+the overall congestion control performance is better than other methods.

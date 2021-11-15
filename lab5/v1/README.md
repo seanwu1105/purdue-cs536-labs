@@ -295,7 +295,50 @@ buffer.
 
 ## Project Structure
 
-TODO
+### `../lib/audio_client.c`
+
+Provide shared functionality for `audiocli`. The functions inside are designed
+to be reusable for both `v1` and `v2`.
+
+### `../lib/audio_server.c`
+
+Provide shared functionality for `audiosrv`. The functions inside are designed
+to be reusable for both `v1` and `v2`.
+
+### `../lib/audio.c`
+
+A wrapper of ALSA PCM audio APIs. You can comment out this file if you only want
+to simulate the congestion control without playing audio with hardware devices.
+
+### `../lib/congestion_controls.c`
+
+Provides 2 basic methods for congestion controls: method C and D. The detailed
+spec can be found in the instruction.
+
+### `../lib/logger.c`
+
+Provide logging functionality for both client and server.
+
+### `../lib/parameter_checkers.c`
+
+Sanitize the use inputs from command arguments and `audiocliparam.dat`.
+
+### `../lib/pspacing.c`
+
+Conversion between lambda (influx rate, packets per second) and pspacing (packet
+transmission interval in ms).
+
+### `../lib/queue.c`
+
+The implementation of circular queue for buffering.
+
+### `../lib/request_codec.c`
+
+Encode and decode the request packet.
+
+### `../lib/socket_utils.c`
+
+A wrapper of socket related APIs.
 
 ## Analysis
 
