@@ -29,6 +29,7 @@ static int enqueue(Queue *const queue, const uint8_t value)
 ssize_t read_queue(Queue *const queue, uint8_t *const buffer,
                    const size_t length)
 {
+    if (get_queue_load(queue) < length) return -1;
     size_t read = 0;
     while (read < length)
     {
@@ -41,6 +42,7 @@ ssize_t read_queue(Queue *const queue, uint8_t *const buffer,
 ssize_t write_queue(Queue *const queue, const uint8_t *const data,
                     const size_t length)
 {
+    if (get_queue_load(queue) + length > queue->length - 1) return -1;
     size_t written = 0;
     while (written < length)
     {
