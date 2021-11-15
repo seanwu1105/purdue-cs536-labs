@@ -87,17 +87,28 @@ static int mulawrecover(snd_pcm_t *pcm_handle)
 int mulawwrite(snd_pcm_t *pcm_handle, const uint8_t *const data,
                const size_t size)
 {
-    int status = 0;
-    if ((status = snd_pcm_writei(pcm_handle, data, (snd_pcm_uframes_t)size)) <
-        0)
+    static int write_status = 0;
+    if (write_status < 0)
     {
-        if (status == -EPIPE)
+        if (write_status == -EPIPE)
+        {
+            int status = 0;
             if ((status = mulawrecover(pcm_handle)) < 0)
+            {
+                fprintf(stderr, "Cannot recover PCM device: %d\n", status);
                 return status;
+            }
             else
-                fprintf(stderr, "Cannot write to PCM device\n");
-        return status;
+                fprintf(stderr, "Cannot write to PCM device: Queue is Empty\n");
+        }
+        else
+        {
+            fprintf(stderr, "Cannot write to PCM device: %d\n", write_status);
+            return write_status;
+        }
     }
+
+    write_status = snd_pcm_writei(pcm_handle, data, (snd_pcm_uframes_t)size);
     return 0;
 }
 
