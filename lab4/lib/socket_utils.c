@@ -73,10 +73,6 @@ int bind_socket_with_first_usable_addr(const struct addrinfo *const info,
 
 int get_udp_host_ip(const struct addrinfo *const server_info, uint32_t *ip)
 {
-    struct addrinfo *res;
-
-    build_addrinfo(&res, NULL, "0", SOCK_DGRAM);
-
     int fd = socket(server_info->ai_family, server_info->ai_socktype,
                     server_info->ai_protocol);
 
@@ -85,6 +81,10 @@ int get_udp_host_ip(const struct addrinfo *const server_info, uint32_t *ip)
         perror("connect");
         return -1;
     }
+
+    struct addrinfo *res;
+
+    if (build_addrinfo(&res, NULL, "0", SOCK_DGRAM) != 0) return -1;
 
     if (getsockname(fd, res->ai_addr, &res->ai_addrlen) == -1)
     {
