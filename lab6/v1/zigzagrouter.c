@@ -11,20 +11,19 @@
 #include "zzconfig_codec.h"
 
 #define BUFFER_SIZE 4096
-#define DATA_FDS_COUNT 2
 
 static int control_fd = -1;
-static int data_fds[DATA_FDS_COUNT] = {-1, -1};
+static int forward_fd = -1;
+static int return_fd = -1;
 
 static void tear_down()
 {
     close(control_fd);
     control_fd = -1;
-    for (size_t i = 0; i < DATA_FDS_COUNT; i++)
-    {
-        close(data_fds[i]);
-        data_fds[i] = -1;
-    }
+    close(forward_fd);
+    forward_fd = -1;
+    close(return_fd);
+    return_fd = -1;
 }
 
 static void sigint_handler(int _)
@@ -37,12 +36,11 @@ static int select_fds(fd_set *const read_fds)
 {
     FD_ZERO(read_fds);
     FD_SET(control_fd, read_fds);
-    for (int i = 0; i < DATA_FDS_COUNT; i++)
-        FD_SET(data_fds[i], read_fds);
+    FD_SET(forward_fd, read_fds);
+    FD_SET(return_fd, read_fds);
 
     int max_fd = 0;
-    for (int i = 0; i < DATA_FDS_COUNT; i++)
-        max_fd = data_fds[i] > max_fd ? data_fds[i] : max_fd;
+    max_fd = forward_fd > return_fd ? forward_fd : return_fd;
     max_fd = control_fd > max_fd ? control_fd : max_fd;
 
     if (select(max_fd + 1, read_fds, NULL, NULL, NULL) < 0)
@@ -84,17 +82,17 @@ static int update_forwardings()
     return 0;
 }
 
-static int forward_data(const int fd_idx)
+static int forward_data(const int fd)
 {
     uint8_t buffer[BUFFER_SIZE];
     const ssize_t bytes_recv =
-        recvfrom(data_fds[fd_idx], buffer, sizeof(buffer), 0, NULL, NULL);
+        recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL);
     if (bytes_recv == -1)
     {
         perror("recvfrom");
         return -1;
     }
-    printf("data_fds[%d] received with size: %ld\n", fd_idx, bytes_recv);
+    printf("data received with size: %ld\n", bytes_recv);
 
     // TODO: Check if we can forward.
     // TODO: Forward.
@@ -110,8 +108,8 @@ static int run()
 
         if (FD_ISSET(control_fd, &read_fds)) update_forwardings();
 
-        for (int i = 0; i < DATA_FDS_COUNT; i++)
-            if (FD_ISSET(data_fds[i], &read_fds)) forward_data(i);
+        if (FD_ISSET(forward_fd, &read_fds)) forward_data(forward_fd);
+        if (FD_ISSET(return_fd, &read_fds)) forward_data(return_fd);
     }
 
     return 0;
@@ -168,17 +166,23 @@ int main(int argc, char *argv[])
     const uint16_t control_port = get_port_number(control_fd);
     fprintf(stdout, "control socket port: %u\n", control_port);
 
-    for (size_t i = 0; i < DATA_FDS_COUNT; i++)
+    forward_fd = create_and_bind_udp_socket();
+    if (forward_fd < 0)
     {
-        data_fds[i] = create_and_bind_udp_socket();
-        if (data_fds[i] < 0)
-        {
-            tear_down();
-            return -1;
-        }
-        const uint16_t data_port = get_port_number(data_fds[i]);
-        fprintf(stdout, "data socket %ld port: %u\n", i, data_port);
+        tear_down();
+        return -1;
     }
+    fprintf(stdout, "forward data socket port: %u\n",
+            get_port_number(forward_fd));
+
+    return_fd = create_and_bind_udp_socket();
+    if (return_fd < 0)
+    {
+        tear_down();
+        return -1;
+    }
+    fprintf(stdout, "return data socket port: %u\n",
+            get_port_number(return_fd));
 
     return run();
 }
