@@ -1,7 +1,7 @@
-#include <stdint.h>
-
 #if !defined(_READ_CONFIG_H_)
 #define _READ_CONFIG_H_
+
+#include <stdint.h>
 
 #define CONFIG_FILENAME "pingparam.dat"
 

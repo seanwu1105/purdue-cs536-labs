@@ -1,4 +1,3 @@
-#include "socket_utils.h"
 #include <netdb.h>
 #include <signal.h>
 #include <stdint.h>
@@ -8,11 +7,14 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "socket_utils.h"
+
 #define BUFFER_SIZE 4096
 #define DATA_FDS_COUNT 2
 
 static int control_fd = -1;
 static int data_fds[DATA_FDS_COUNT] = {-1, -1};
+static struct addrinfo forward_addrs[DATA_FDS_COUNT] = {0};
 
 static void tear_down()
 {
@@ -51,6 +53,38 @@ static int select_fds(fd_set *const read_fds)
     return 0;
 }
 
+static int update_forwardings()
+{
+    uint8_t buffer[BUFFER_SIZE];
+    const ssize_t bytes_recv =
+        recvfrom(control_fd, buffer, sizeof(buffer), 0, NULL, NULL);
+    if (bytes_recv == -1)
+    {
+        perror("recvfrom");
+        return -1;
+    }
+    printf("control_fd received with size: %ld\n", bytes_recv);
+
+    // TODO: Only close and reopen receive socket if we need to.
+    // TODO: Only close and reopen send socket if we need to.
+}
+
+static int forward_data(const int fd_idx)
+{
+    uint8_t buffer[BUFFER_SIZE];
+    const ssize_t bytes_recv =
+        recvfrom(data_fds[fd_idx], buffer, sizeof(buffer), 0, NULL, NULL);
+    if (bytes_recv == -1)
+    {
+        perror("recvfrom");
+        return -1;
+    }
+    printf("data_fds[%d] received with size: %ld\n", fd_idx, bytes_recv);
+
+    // TODO: Check if we can forward.
+    // TODO: Forward.
+}
+
 static int run()
 {
     while (1)
@@ -58,34 +92,10 @@ static int run()
         fd_set read_fds;
         if (select_fds(&read_fds) < 0) return -1;
 
-        uint8_t buffer[BUFFER_SIZE];
-
-        if (FD_ISSET(control_fd, &read_fds))
-        {
-            const ssize_t bytes_recv =
-                recvfrom(control_fd, buffer, sizeof(buffer), 0, NULL, NULL);
-            if (bytes_recv == -1)
-            {
-                perror("recvfrom");
-                return -1;
-            }
-            printf("control_fd received with size: %ld\n", bytes_recv);
-        }
+        if (FD_ISSET(control_fd, &read_fds)) update_forwardings();
 
         for (int i = 0; i < DATA_FDS_COUNT; i++)
-        {
-            if (FD_ISSET(data_fds[i], &read_fds))
-            {
-                const ssize_t bytes_recv = recvfrom(
-                    data_fds[i], buffer, sizeof(buffer), 0, NULL, NULL);
-                if (bytes_recv == -1)
-                {
-                    perror("recvfrom");
-                    return -1;
-                }
-                printf("data_fds[%d] received with size: %ld\n", i, bytes_recv);
-            }
-        }
+            if (FD_ISSET(data_fds[i], &read_fds)) forward_data(i);
     }
 
     return 0;
