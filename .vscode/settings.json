@@ -36,7 +36,8 @@
     "audio_client.h": "c",
     "*.tcc": "cpp",
     "random": "cpp",
-    "cstdlib": "c"
+    "cstdlib": "c",
+    "zzconfig_codec.h": "c"
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

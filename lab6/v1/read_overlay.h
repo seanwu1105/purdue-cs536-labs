@@ -1,19 +1,21 @@
 #if !defined(_READ_OVERLAY_H_)
 #define _READ_OVERLAY_H_
 
-#define OVERLAY_FILENAME "zzoverlay.dat"
-#define MAX_FORWARDING_PAIRS 10
+#include <arpa/inet.h>
+#include <stdlib.h>
 
 #include "zzconfig_codec.h"
 
+#define OVERLAY_FILENAME "zzoverlay.dat"
+
 typedef struct
 {
-    char *ip;
-    char *port;
-    ForwardingPair forwarding_pairs[MAX_FORWARDING_PAIRS];
-    int num_forwarding_pairs;
+    char ip[INET_ADDRSTRLEN];
+    char port[PORT_STRLEN];
+    ForwardingPair forward_path;
+    ForwardingPair return_path;
 } OverlayEntry;
 
-int read_overlay(OverlayEntry entries[], size_t *const num_fwd_pairs);
+ssize_t read_overlay(OverlayEntry entries[]);
 
 #endif // _READ_OVERLAY_H_
