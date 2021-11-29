@@ -143,3 +143,15 @@ jobs:
 
       - name: Make
         run: make
+
+  lab6_v1:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab6/v1/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Make
+        run: make
