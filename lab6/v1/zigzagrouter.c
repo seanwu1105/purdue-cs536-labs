@@ -13,6 +13,8 @@
 #include "zzconfig_codec.h"
 
 #define BUFFER_SIZE 4096
+#define RETURN_IP_FILL_IN "0.0.0.0"
+#define RETURN_PORT_FILL_IN "0"
 
 static int control_fd = -1;
 static int forward_fd = -1;
@@ -133,17 +135,46 @@ static int update_forwardings(ForwardingPath *const forward_path,
     return 0;
 }
 
-static int forward_data(const int fd, ForwardingPath *const path)
+static int update_return_path(const struct sockaddr *const addr,
+                              ForwardingPath *const return_path)
 {
+    char ip_str[INET_ADDRSTRLEN];
+    if (inet_ntop(AF_INET, &(((struct sockaddr_in *)addr)->sin_addr), ip_str,
+                  INET_ADDRSTRLEN) == NULL)
+    {
+        perror("inet_ntop");
+        return -1;
+    }
+    char port_str[PORT_STRLEN];
+    snprintf(port_str, PORT_STRLEN, "%d",
+             ntohs(((struct sockaddr_in *)addr)->sin_port));
+
+    strncpy(return_path->send_ip, ip_str, INET_ADDRSTRLEN);
+    strncpy(return_path->send_port, port_str, PORT_STRLEN);
+
+    printf("Return path updated: %s:%s\n", ip_str, port_str);
+    return 0;
+}
+
+static int forward_data(const int fd, const ForwardingPath *const path,
+                        ForwardingPath *const return_path)
+{
+    struct sockaddr addr;
+    socklen_t addr_len = sizeof(addr);
     uint8_t buffer[BUFFER_SIZE];
     const ssize_t bytes_recv =
-        recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL);
+        recvfrom(fd, buffer, sizeof(buffer), 0, &addr, &addr_len);
     if (bytes_recv == -1)
     {
         perror("recvfrom");
         return -1;
     }
-    printf("data received with size: %ld\n", bytes_recv);
+
+    if (return_path != NULL &&
+        strncmp(return_path->send_ip, RETURN_IP_FILL_IN, INET_ADDRSTRLEN) ==
+            0 &&
+        strncmp(return_path->send_port, RETURN_PORT_FILL_IN, PORT_STRLEN) == 0)
+        if (update_return_path(&addr, return_path) < 0) return -1;
 
     if (path->send_ip == NULL || path->send_port == NULL ||
         strnlen(path->send_ip, INET_ADDRSTRLEN) == 0 ||
@@ -180,9 +211,9 @@ static int run(ForwardingPath *const forward_path,
         if (FD_ISSET(control_fd, &read_fds))
             update_forwardings(forward_path, return_path);
         if (FD_ISSET(forward_fd, &read_fds))
-            forward_data(forward_fd, forward_path);
+            forward_data(forward_fd, forward_path, return_path);
         if (FD_ISSET(return_fd, &read_fds))
-            forward_data(return_fd, return_path);
+            forward_data(return_fd, return_path, NULL);
     }
 
     return 0;
