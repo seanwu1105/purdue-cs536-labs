@@ -193,3 +193,148 @@ previous labs (e.g., `Makefile`, `README`).
 > would yield 220 points. If you decide to solve the simplified problem, please
 > indicate so on the cover page of lab6.pdf. In a group effort, all members must
 > solve the same problem, full or simplified.
+
+## Getting Started
+
+Design the routing graph and prepare the `zzoverlay.dat` file mentioned above.
+For example:
+
+```txt
+2
+
+127.0.0.1 10000
+10001 20001 127.0.0.1
+10002 0 0.0.0.0
+
+127.0.0.1 20000
+20001 30001 127.0.0.1
+20002 10002 127.0.0.1
+```
+
+Any reachable IP address is acceptable.
+
+Build `zigzagrouter` and `zigzagconf` with the `make` command in the `/v1`
+directory.
+
+```sh
+make
+```
+
+Start all `zigzagrouter`s first to get ready for forwarding data.
+
+```sh
+./zigzagrouter <control-port>
+```
+
+After the `zigzagrouter` is running, build (with `make`) and start the
+`mypingsrv` in [`lab2/v1/`](../../lab2/v1/mypingsrv.c).
+
+```sh
+../../lab2/v1/mypingsrv <server-ip> <server-port>
+```
+
+Note that you should set the IP/port of `mypingsrv` according to your
+`zzoverlay.dat` design.
+
+Now, run `zigzagconf` to update the graph design to all routers.
+
+```sh
+./zigzagconf
+```
+
+After the update, start pinging with the following command.
+
+```sh
+../../lab2/v1/mypingcli <client-ip> <server-ip> <server-port>
+```
+
+To stop a running router or server, send `SIGINT` with <kbd>ctrl</kbd> +
+<kbd>c</kbd> on Linux.
+
+See `README.md` in `lab2/v1` for details about the configuration of pinging.
+
+## Project Structure
+
+### `zigzagconf.c`
+
+Provide the functionality to update routing plan to all associated
+`zigzagrouter`s.
+
+### `zigzagrouter.c`
+
+Provide the functionality to do application-layer routing. Be able to manage
+receiving ports update from `zigzagconf`.
+
+### `print_payload.c`
+
+Print payload contents in hex code.
+
+### `read_overlay.c`
+
+Read `zzoverlay.dat` file and provide a clean interface to get the
+configuration.
+
+### `socket_utils.c`
+
+Wrap the low-level socket system calls with safer functions.
+
+### `zzconfig_codec.c`
+
+Encode and decode the message packets between `zigzagconf` and `zigzagrouter`s.
+
+## Performance Analysis
+
+### Sample Configuration
+
+- `./mypingsrv 128.10.25.207 10901` runs on `128.10.25.207`.
+- `./mypingcli 128.10.112.137 128.10.112.132 10501` runs on `128.10.112.137`.
+
+#### `zzoverlay.dat`
+
+```txt
+4
+
+128.10.112.132 10500
+10501 10601 128.10.25.214
+10502 0 0.0.0.0
+
+128.10.25.214 10600
+10601 10701 128.10.112.135
+10602 10702 128.10.112.135
+
+128.10.112.135 10700
+10701 10801 128.10.25.201
+10702 10502 128.10.112.132
+
+128.10.25.201 10800
+10801 10901 128.10.25.207
+10802 10602 128.10.25.214
+```
+
+#### `pingparam.dat`
+
+```txt
+3 1 0 1
+```
+
+### Statistics
+
+The following data shows the RTT in 9 independent trials.
+
+| 0 `zigzagrouter` RTT (ms) | 1 `zigzagrouter` RTT (ms) | 2 `zigzagrouter`s RTT (ms) | 0 `zigzagrouter`s RTT (ms) | 4 `zigzagrouter`s RTT (ms) |
+| :-----------------------: | :-----------------------: | :------------------------: | :------------------------: | :------------------------: |
+|           0.879           |           1.640           |           2.272            |           2.853            |           3.523            |
+|           0.748           |           1.582           |           2.476            |           3.329            |           4.017            |
+|           0.572           |           1.380           |           2.210            |           3.133            |           3.919            |
+|           0.800           |           1.675           |           2.426            |           3.235            |           4.019            |
+|           1.047           |           1.797           |           2.364            |           2.950            |           3.532            |
+|           0.932           |           1.723           |           2.377            |           3.059            |           3.755            |
+|           0.918           |           1.770           |           2.536            |           3.333            |           4.028            |
+|           1.045           |           1.894           |           2.565            |           3.245            |           4.110            |
+|           1.042           |           1.758           |           2.518            |           3.222            |           4.052            |
+
+As expected, the pinging RTT increases when the number of involving
+`zigzagrouter` increases as it needs more UDP transmission to pass the data. The
+"0 `zigzagrouter`" scenario is a typical P2P pinging only involving physical
+routing. Other cases are more complex and slower as each application routing are
+built on top the physical one.
