@@ -9,6 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "print_payload.h"
 #include "socket_utils.h"
 #include "zzconfig_codec.h"
 
@@ -76,9 +77,11 @@ static int create_and_bind_udp_socket(const char *const port)
 static int update_forwardings(ForwardingPath *const forward_path,
                               ForwardingPath *const return_path)
 {
+    struct sockaddr addr;
+    socklen_t addr_len = sizeof(addr);
     uint8_t buffer[ZZCONFIG_SIZE];
     const ssize_t bytes_recv =
-        recvfrom(control_fd, buffer, sizeof(buffer), 0, NULL, NULL);
+        recvfrom(control_fd, buffer, sizeof(buffer), 0, &addr, &addr_len);
     if (bytes_recv == -1)
     {
         perror("recvfrom");
@@ -89,6 +92,12 @@ static int update_forwardings(ForwardingPath *const forward_path,
         fprintf(stderr, "Invalid zzconfig message size: %ld\n", bytes_recv);
         return -1;
     }
+    char ip_str[INET_ADDRSTRLEN];
+    char port_str[PORT_STRLEN];
+    inet_ntop(AF_INET, &(((struct sockaddr_in *)&addr)->sin_addr), ip_str,
+              INET_ADDRSTRLEN);
+    snprintf(port_str, PORT_STRLEN, "%d",
+             ntohs(((struct sockaddr_in *)&addr)->sin_port));
 
     ForwardingPath new_forward_path = {0};
     ForwardingPath new_return_path = {0};
@@ -97,6 +106,7 @@ static int update_forwardings(ForwardingPath *const forward_path,
 
     time_t ltime = time(NULL);
     fprintf(stdout, "\n%s", asctime(localtime(&ltime)));
+    fprintf(stdout, "Message from %s:%s\n", ip_str, port_str);
 
     if (get_port_number(forward_fd) !=
         (uint16_t)strtoul(new_forward_path.receive_port, NULL, 0))
@@ -131,7 +141,7 @@ static int update_forwardings(ForwardingPath *const forward_path,
             forward_path->send_ip, forward_path->send_port);
     fprintf(stdout, "Update return path sending: %s:%s\n", return_path->send_ip,
             return_path->send_port);
-
+    print_payload(buffer, bytes_recv);
     return 0;
 }
 
