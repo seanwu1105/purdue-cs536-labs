@@ -71,8 +71,8 @@ static int create_and_bind_udp_socket(const char *const port)
     return fd;
 }
 
-static int update_forwardings(ForwardingPair *const forward_path,
-                              ForwardingPair *const return_path)
+static int update_forwardings(ForwardingPath *const forward_path,
+                              ForwardingPath *const return_path)
 {
     uint8_t buffer[ZZCONFIG_SIZE];
     const ssize_t bytes_recv =
@@ -88,8 +88,8 @@ static int update_forwardings(ForwardingPair *const forward_path,
         return -1;
     }
 
-    ForwardingPair new_forward_path;
-    ForwardingPair new_return_path;
+    ForwardingPath new_forward_path = {0};
+    ForwardingPath new_return_path = {0};
     if (decode_zzconfig(buffer, &new_forward_path, &new_return_path) == -1)
         return -1;
 
@@ -133,7 +133,7 @@ static int update_forwardings(ForwardingPair *const forward_path,
     return 0;
 }
 
-static int forward_data(const int fd)
+static int forward_data(const int fd, ForwardingPath *const path)
 {
     uint8_t buffer[BUFFER_SIZE];
     const ssize_t bytes_recv =
@@ -145,13 +145,32 @@ static int forward_data(const int fd)
     }
     printf("data received with size: %ld\n", bytes_recv);
 
-    // TODO: Check if we can forward.
-    // TODO: Forward. (use the return_path port)
+    if (path->send_ip == NULL || path->send_port == NULL ||
+        strnlen(path->send_ip, INET_ADDRSTRLEN) == 0 ||
+        strnlen(path->send_port, PORT_STRLEN) == 0)
+    {
+        fprintf(stderr, "Forward path sending address has not initialized.\n");
+        return -1;
+    }
+
+    struct addrinfo *info;
+    if (build_addrinfo(&info, path->send_ip, path->send_port, SOCK_DGRAM) < 0)
+        return -1;
+
+    // Always use the return_fd to send data so the receiver can send feedback
+    // to router.
+    if (sendto(return_fd, buffer, bytes_recv, 0, info->ai_addr,
+               info->ai_addrlen) < 0)
+    {
+        perror("sendto");
+        return -1;
+    }
+
     return 0;
 }
 
-static int run(ForwardingPair *const forward_path,
-               ForwardingPair *const return_path)
+static int run(ForwardingPath *const forward_path,
+               ForwardingPath *const return_path)
 {
     while (1)
     {
@@ -160,9 +179,10 @@ static int run(ForwardingPair *const forward_path,
 
         if (FD_ISSET(control_fd, &read_fds))
             update_forwardings(forward_path, return_path);
-
-        if (FD_ISSET(forward_fd, &read_fds)) forward_data(forward_fd);
-        if (FD_ISSET(return_fd, &read_fds)) forward_data(return_fd);
+        if (FD_ISSET(forward_fd, &read_fds))
+            forward_data(forward_fd, forward_path);
+        if (FD_ISSET(return_fd, &read_fds))
+            forward_data(return_fd, return_path);
     }
 
     return 0;
@@ -219,11 +239,11 @@ int main(int argc, char *argv[])
     fprintf(stdout, "Return data socket port: %u\n",
             get_port_number(return_fd));
 
-    ForwardingPair forward_path;
-    ForwardingPair return_path;
+    ForwardingPath forward_path = {.send_ip = "", .send_port = ""};
+    ForwardingPath return_path = {.send_ip = "", .send_port = ""};
 
     sprintf(forward_path.receive_port, "%u", get_port_number(forward_fd));
-    sprintf(forward_path.send_port, "%u", get_port_number(return_fd));
+    sprintf(return_path.receive_port, "%u", get_port_number(return_fd));
 
     return run(&forward_path, &return_path);
 }

@@ -20,19 +20,19 @@ static int parse_entry_control(char *buffer, char *ip, char *port)
     return 0;
 }
 
-static int parse_entry_data_forwarding(char *buffer, ForwardingPair *const pair)
+static int parse_entry_data_forwarding(char *buffer, ForwardingPath *const path)
 {
     if (strcmp(buffer, "\n") == 0) return -1;
 
     char *token = strtok(buffer, " \t\n\0");
     if (token == NULL) return -1;
-    strncpy(pair->receive_port, token, PORT_STRLEN);
+    strncpy(path->receive_port, token, PORT_STRLEN);
     token = strtok(NULL, " \t\n\0");
     if (token == NULL) return -1;
-    strncpy(pair->send_port, token, PORT_STRLEN);
+    strncpy(path->send_port, token, PORT_STRLEN);
     token = strtok(NULL, " \t\n\0");
     if (token == NULL) return -1;
-    strncpy(pair->send_ip, token, INET_ADDRSTRLEN);
+    strncpy(path->send_ip, token, INET_ADDRSTRLEN);
 
     return 0;
 }

@@ -6,8 +6,8 @@
 
 #include "zzconfig_codec.h"
 
-int encode_zzconfig(const ForwardingPair *const forward_path,
-                    const ForwardingPair *const return_path,
+int encode_zzconfig(const ForwardingPath *const forward_path,
+                    const ForwardingPath *const return_path,
                     uint8_t *const config)
 {
     ((uint16_t *)config)[0] =
@@ -33,8 +33,8 @@ int encode_zzconfig(const ForwardingPair *const forward_path,
 }
 
 int decode_zzconfig(const uint8_t *const config,
-                    ForwardingPair *const forward_path,
-                    ForwardingPair *const return_path)
+                    ForwardingPath *const forward_path,
+                    ForwardingPath *const return_path)
 {
     sprintf(forward_path->receive_port, "%u", ((uint16_t *)config)[0]);
     sprintf(forward_path->send_port, "%u", ((uint16_t *)config)[1]);

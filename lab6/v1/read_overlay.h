@@ -12,8 +12,8 @@ typedef struct
 {
     char ip[INET_ADDRSTRLEN];
     char port[PORT_STRLEN];
-    ForwardingPair forward_path;
-    ForwardingPair return_path;
+    ForwardingPath forward_path;
+    ForwardingPath return_path;
 } OverlayEntry;
 
 ssize_t read_overlay(OverlayEntry entries[]);

@@ -12,14 +12,14 @@ typedef struct
     char receive_port[PORT_STRLEN];
     char send_port[PORT_STRLEN];
     char send_ip[INET_ADDRSTRLEN];
-} ForwardingPair;
+} ForwardingPath;
 
-int encode_zzconfig(const ForwardingPair *const forward_path,
-                    const ForwardingPair *const return_path,
+int encode_zzconfig(const ForwardingPath *const forward_path,
+                    const ForwardingPath *const return_path,
                     uint8_t *const config);
 
 int decode_zzconfig(const uint8_t *const config,
-                    ForwardingPair *const forward_path,
-                    ForwardingPair *const return_path);
+                    ForwardingPath *const forward_path,
+                    ForwardingPath *const return_path);
 
 #endif // _ZZCONFIG_CODEC_H_
