@@ -117,7 +117,8 @@ int parse_arg(int argc, char *argv[], struct addrinfo **client_info,
 {
     if (argc < REQUIRED_ARGC)
     {
-        fprintf(stderr, "insufficient arguments: expect %d\n", REQUIRED_ARGC);
+        fprintf(stderr, "Usage: %s <client-ip> <server-ip> <server-port>\n",
+                argv[0]);
         return -1;
     }
     const char *const client_ip = argv[1];
