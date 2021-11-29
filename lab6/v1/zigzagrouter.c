@@ -3,8 +3,10 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "socket_utils.h"
@@ -51,7 +53,26 @@ static int select_fds(fd_set *const read_fds)
     return 0;
 }
 
-static int update_forwardings()
+static int create_and_bind_udp_socket(const char *const port)
+{
+    struct addrinfo *info;
+    if (build_addrinfo(&info, NULL, port, SOCK_DGRAM) != 0) return -1;
+
+    const int fd = create_socket_with_first_usable_addr(info);
+    if (fd == -1) return -1;
+
+    if (bind_socket_with_first_usable_addr(info, fd) < 0)
+    {
+        close(fd);
+        return -1;
+    }
+
+    freeaddrinfo(info);
+    return fd;
+}
+
+static int update_forwardings(ForwardingPair *const forward_path,
+                              ForwardingPair *const return_path)
 {
     uint8_t buffer[ZZCONFIG_SIZE];
     const ssize_t bytes_recv =
@@ -66,19 +87,49 @@ static int update_forwardings()
         fprintf(stderr, "Invalid zzconfig message size: %ld\n", bytes_recv);
         return -1;
     }
-    ForwardingPair forward_path;
-    ForwardingPair return_path;
-    if (decode_zzconfig(buffer, &forward_path, &return_path) == -1) return -1;
 
-    printf("fwd recv port: %s\n", forward_path.receive_port);
-    printf("fwd send port: %s\n", forward_path.send_port);
-    printf("fwd send ip: %s\n", forward_path.send_ip);
-    printf("ret recv port: %s\n", return_path.receive_port);
-    printf("ret send port: %s\n", return_path.send_port);
-    printf("ret send ip: %s\n", return_path.send_ip);
+    ForwardingPair new_forward_path;
+    ForwardingPair new_return_path;
+    if (decode_zzconfig(buffer, &new_forward_path, &new_return_path) == -1)
+        return -1;
 
-    // TODO: Only close and reopen receive socket if we need to.
-    // TODO: Only close and reopen send socket if we need to.
+    time_t ltime = time(NULL);
+    fprintf(stdout, "\n%s", asctime(localtime(&ltime)));
+
+    if (get_port_number(forward_fd) !=
+        (uint16_t)strtoul(new_forward_path.receive_port, NULL, 0))
+    {
+        fprintf(stdout, "Update forward path receiving port from %u",
+                get_port_number(forward_fd));
+        close(forward_fd);
+        forward_fd = create_and_bind_udp_socket(new_forward_path.receive_port);
+        printf(" to %u\n", get_port_number(forward_fd));
+        strncpy(forward_path->receive_port, new_forward_path.receive_port,
+                PORT_STRLEN);
+    }
+
+    if (get_port_number(return_fd) !=
+        (uint16_t)strtoul(new_return_path.receive_port, NULL, 0))
+    {
+        fprintf(stdout, "Update return path receiving port from %u",
+                get_port_number(return_fd));
+        close(return_fd);
+        return_fd = create_and_bind_udp_socket(new_return_path.receive_port);
+        printf(" to %u\n", get_port_number(return_fd));
+        strncpy(return_path->receive_port, new_return_path.receive_port,
+                PORT_STRLEN);
+    }
+
+    strncpy(forward_path->send_port, new_forward_path.send_port, PORT_STRLEN);
+    strncpy(forward_path->send_ip, new_forward_path.send_ip, INET_ADDRSTRLEN);
+    strncpy(return_path->send_port, new_return_path.send_port, PORT_STRLEN);
+    strncpy(return_path->send_ip, new_return_path.send_ip, INET_ADDRSTRLEN);
+
+    fprintf(stdout, "Update forward path sending: %s:%s\n",
+            forward_path->send_ip, forward_path->send_port);
+    fprintf(stdout, "Update return path sending: %s:%s\n", return_path->send_ip,
+            return_path->send_port);
+
     return 0;
 }
 
@@ -95,42 +146,26 @@ static int forward_data(const int fd)
     printf("data received with size: %ld\n", bytes_recv);
 
     // TODO: Check if we can forward.
-    // TODO: Forward.
+    // TODO: Forward. (use the return_path port)
     return 0;
 }
 
-static int run()
+static int run(ForwardingPair *const forward_path,
+               ForwardingPair *const return_path)
 {
     while (1)
     {
         fd_set read_fds;
         if (select_fds(&read_fds) < 0) return -1;
 
-        if (FD_ISSET(control_fd, &read_fds)) update_forwardings();
+        if (FD_ISSET(control_fd, &read_fds))
+            update_forwardings(forward_path, return_path);
 
         if (FD_ISSET(forward_fd, &read_fds)) forward_data(forward_fd);
         if (FD_ISSET(return_fd, &read_fds)) forward_data(return_fd);
     }
 
     return 0;
-}
-
-static int create_and_bind_udp_socket()
-{
-    struct addrinfo *info;
-    if (build_addrinfo(&info, NULL, "0", SOCK_DGRAM) != 0) return -1;
-
-    const int fd = create_socket_with_first_usable_addr(info);
-    if (fd == -1) return -1;
-
-    if (bind_socket_with_first_usable_addr(info, fd) < 0)
-    {
-        close(fd);
-        return -1;
-    }
-
-    freeaddrinfo(info);
-    return fd;
 }
 
 static int create_and_bind_control_socket(int argc, char *argv[])
@@ -148,7 +183,7 @@ static int create_and_bind_control_socket(int argc, char *argv[])
         }
         return 0;
     }
-    control_fd = create_and_bind_udp_socket();
+    control_fd = create_and_bind_udp_socket("0");
     if (control_fd < 0)
     {
         close(control_fd);
@@ -164,25 +199,31 @@ int main(int argc, char *argv[])
 
     if (create_and_bind_control_socket(argc, argv) < 0) return -1;
     const uint16_t control_port = get_port_number(control_fd);
-    fprintf(stdout, "control socket port: %u\n", control_port);
+    fprintf(stdout, "Control socket port: %u\n", control_port);
 
-    forward_fd = create_and_bind_udp_socket();
+    forward_fd = create_and_bind_udp_socket("0");
     if (forward_fd < 0)
     {
         tear_down();
         return -1;
     }
-    fprintf(stdout, "forward data socket port: %u\n",
+    fprintf(stdout, "Forward data socket port: %u\n",
             get_port_number(forward_fd));
 
-    return_fd = create_and_bind_udp_socket();
+    return_fd = create_and_bind_udp_socket("0");
     if (return_fd < 0)
     {
         tear_down();
         return -1;
     }
-    fprintf(stdout, "return data socket port: %u\n",
+    fprintf(stdout, "Return data socket port: %u\n",
             get_port_number(return_fd));
 
-    return run();
+    ForwardingPair forward_path;
+    ForwardingPair return_path;
+
+    sprintf(forward_path.receive_port, "%u", get_port_number(forward_fd));
+    sprintf(forward_path.send_port, "%u", get_port_number(return_fd));
+
+    return run(&forward_path, &return_path);
 }
