@@ -162,6 +162,8 @@ static int update_return_path(const struct sockaddr *const addr,
     strncpy(return_path->send_ip, ip_str, INET_ADDRSTRLEN);
     strncpy(return_path->send_port, port_str, PORT_STRLEN);
 
+    time_t ltime = time(NULL);
+    fprintf(stdout, "\n%s", asctime(localtime(&ltime)));
     printf("Return path updated: %s:%s\n", ip_str, port_str);
     return 0;
 }
@@ -206,6 +208,10 @@ static int forward_data(const int fd, const ForwardingPath *const path,
         perror("sendto");
         return -1;
     }
+
+    time_t ltime = time(NULL);
+    fprintf(stdout, "\n%s", asctime(localtime(&ltime)));
+    fprintf(stdout, "Forward data to %s:%s\n", path->send_ip, path->send_port);
 
     return 0;
 }
